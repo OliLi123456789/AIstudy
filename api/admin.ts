@@ -30,6 +30,18 @@ async function getKey(): Promise<string> {
   return process.env.VITE_API_KEY ?? "";
 }
 
+async function getCanvasOAuthConfig(): Promise<{
+  clientId: string; clientSecret: string; canvasUrl: string;
+} | null> {
+  try {
+    const cfg = await kv.get<{ clientId: string; clientSecret: string; canvasUrl: string }>(
+      "aistudy:canvas_oauth_config",
+    );
+    if (cfg?.clientId && cfg?.clientSecret && cfg?.canvasUrl) return cfg;
+  } catch { /* KV not configured */ }
+  return null;
+}
+
 export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const action = url.searchParams.get("action");
@@ -42,6 +54,17 @@ export async function GET(req: Request): Promise<Response> {
     });
   }
 
+  // Canvas OAuth config — public so the frontend can check availability
+  if (action === "get-canvas-oauth") {
+    const cfg = await getCanvasOAuthConfig();
+    return new Response(JSON.stringify({
+      configured: !!cfg,
+      canvasUrl: cfg?.canvasUrl ?? "",
+    }), {
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
+    });
+  }
+
   return new Response(JSON.stringify({ error: "unknown action" }), {
     status: 400,
     headers: { "content-type": "application/json" },
@@ -49,7 +72,7 @@ export async function GET(req: Request): Promise<Response> {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  let body: { action?: string; password?: string; key?: string };
+  let body: { action?: string; password?: string; key?: string; clientId?: string; clientSecret?: string; canvasUrl?: string };
   try {
     body = await req.json();
   } catch {
@@ -59,7 +82,7 @@ export async function POST(req: Request): Promise<Response> {
     });
   }
 
-  const { action, password, key } = body;
+  const { action, password, key, clientId, clientSecret, canvasUrl } = body;
 
   // Login: just validate the password.
   if (action === "login") {
@@ -95,6 +118,30 @@ export async function POST(req: Request): Promise<Response> {
       });
     }
     return new Response(JSON.stringify({ ok: true, provider: detectProviderFromKey(key.trim()) }), {
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  if (action === "set-canvas-oauth") {
+    if (!clientId || !clientSecret || !canvasUrl) {
+      return new Response(JSON.stringify({ error: "clientId, clientSecret, and canvasUrl are required" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    try {
+      await kv.set("aistudy:canvas_oauth_config", {
+        clientId: clientId.trim(),
+        clientSecret: clientSecret.trim(),
+        canvasUrl: canvasUrl.trim().replace(/\/$/, ""),
+      });
+    } catch {
+      return new Response(JSON.stringify({ error: "KV storage unavailable" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ ok: true }), {
       headers: { "content-type": "application/json" },
     });
   }

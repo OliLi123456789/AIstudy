@@ -20,11 +20,41 @@ export default function Settings() {
   const [canvasToken, setCanvasToken] = useState(prefs.canvasToken ?? "");
   const [canvasStatus, setCanvasStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
   const [canvasMsg, setCanvasMsg] = useState("");
+  const [showToken, setShowToken] = useState(false);
   const [key, setKey] = useState("");
 
   useEffect(() => {
     loadApiKey().then(setKey);
   }, []);
+
+  // Handle Canvas OAuth callback when popup is blocked (redirect fallback)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const session = params.get("canvas_session");
+    if (session) {
+      // Clean the URL
+      const u = new URL(window.location.href);
+      u.searchParams.delete("canvas_session");
+      window.history.replaceState({}, "", u.toString());
+      // Exchange the session for a token
+      fetch(`/api/canvas-oauth?action=exchange&session=${encodeURIComponent(session)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.token) {
+            setCanvasToken(data.token);
+            setCanvasUrl(data.canvasUrl || canvasUrl);
+            setCanvasStatus("ok");
+            setCanvasMsg(data.userName ? `Connected as ${data.userName}` : "Connected via Canvas OAuth");
+            savePrefs({
+              ...prefs,
+              canvasUrl: data.canvasUrl || canvasUrl,
+              canvasToken: data.token,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const provider = key ? detectProvider(key) : null;
 
@@ -92,57 +122,116 @@ export default function Settings() {
             </h2>
             <p className="mt-1 text-sm text-ink-faint">
               Connect your school's Canvas account to import courses and assignments.
-              Get your token from Canvas → Account → Settings → Approved Integrations.
             </p>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm font-semibold text-ink-dim">Canvas URL</label>
-                <input
-                  type="text"
-                  value={canvasUrl}
-                  onChange={(e) => setCanvasUrl(e.target.value)}
-                  placeholder="https://canvas.institution.edu"
-                  className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
-                />
-              </div>
-              <div>
+
+            {/* OAuth sign-in button (shown when owner has configured OAuth) */}
+            <div className="mt-4">
+              <label className="text-sm font-semibold text-ink-dim">Canvas URL</label>
+              <input
+                type="text"
+                value={canvasUrl}
+                onChange={(e) => setCanvasUrl(e.target.value)}
+                placeholder="https://canvas.institution.edu"
+                className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  if (!canvasUrl.trim()) return;
+                  const authUrl = `/api/canvas-oauth?action=authorize&canvasUrl=${encodeURIComponent(canvasUrl.trim())}`;
+                  const popup = window.open(authUrl, "canvas-oauth", "width=600,height=700");
+                  if (!popup) {
+                    // Popup blocked — redirect current window
+                    window.location.href = authUrl;
+                  }
+                }}
+                disabled={!canvasUrl.trim()}
+                className="rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-5 py-2.5 text-sm font-bold text-white hover:from-red-600 hover:to-red-700 disabled:opacity-50 transition shadow-soft"
+              >
+                <span className="flex items-center gap-2">
+                  <GraduationCap className="size-4" />
+                  Sign in with Canvas
+                </span>
+              </button>
+              <span className="text-xs text-ink-faint">or</span>
+              <button
+                onClick={() => setShowToken(!showToken)}
+                className="text-sm font-semibold text-ink-dim hover:text-ink underline underline-offset-2"
+              >
+                {showToken ? "Hide manual token" : "Use access token instead"}
+              </button>
+            </div>
+
+            {/* OAuth postMessage listener */}
+            <OAuthListener
+              onToken={async (sessionId) => {
+                try {
+                  const res = await fetch(`/api/canvas-oauth?action=exchange&session=${encodeURIComponent(sessionId)}`);
+                  if (!res.ok) throw new Error("Session expired");
+                  const data = await res.json();
+                  if (data.token) {
+                    setCanvasToken(data.token);
+                    setCanvasUrl(data.canvasUrl || canvasUrl);
+                    setCanvasStatus("ok");
+                    setCanvasMsg(data.userName ? `Connected as ${data.userName}` : "Connected via Canvas OAuth");
+                    savePrefs({
+                      ...prefs,
+                      canvasUrl: data.canvasUrl || canvasUrl.trim(),
+                      canvasToken: data.token,
+                    });
+                  }
+                } catch (e) {
+                  setCanvasStatus("error");
+                  setCanvasMsg(e instanceof Error ? e.message : "OAuth failed");
+                }
+              }}
+            />
+
+            {/* Manual token fallback */}
+            {showToken && (
+              <div className="mt-4 space-y-3 border-t border-edge pt-4">
                 <label className="text-sm font-semibold text-ink-dim">Access Token</label>
+                <p className="text-xs text-ink-faint">
+                  Get your token from Canvas → Account → Settings → Approved Integrations → New Access Token.
+                </p>
                 <input
                   type="password"
                   value={canvasToken}
                   onChange={(e) => setCanvasToken(e.target.value)}
                   placeholder="Canvas personal access token"
-                  className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+                  className="w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
                 />
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      setCanvasStatus("testing");
+                      setCanvasMsg("");
+                      try {
+                        const client = createCanvasClient(canvasToken.trim(), canvasUrl.trim());
+                        const profile = await client.validate();
+                        setCanvasStatus("ok");
+                        setCanvasMsg(`Connected as ${profile.name}`);
+                        savePrefs({ ...prefs, canvasUrl: canvasUrl.trim(), canvasToken: canvasToken.trim() });
+                      } catch (e) {
+                        setCanvasStatus("error");
+                        setCanvasMsg(e instanceof Error ? e.message : "Connection failed");
+                      }
+                    }}
+                    disabled={!canvasUrl.trim() || !canvasToken.trim() || canvasStatus === "testing"}
+                    className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-60"
+                  >
+                    {canvasStatus === "testing" ? "Testing…" : canvasStatus === "ok" ? "✓ Connected" : "Test & save"}
+                  </button>
+                  {canvasMsg && (
+                    <span className={`text-sm font-semibold ${canvasStatus === "error" ? "text-danger-ink" : "text-green-600"}`}>
+                      {canvasMsg}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={async () => {
-                    setCanvasStatus("testing");
-                    setCanvasMsg("");
-                    try {
-                      const client = createCanvasClient(canvasToken.trim(), canvasUrl.trim());
-                      const profile = await client.validate();
-                      setCanvasStatus("ok");
-                      setCanvasMsg(`Connected as ${profile.name}`);
-                      savePrefs({ ...prefs, canvasUrl: canvasUrl.trim(), canvasToken: canvasToken.trim() });
-                    } catch (e) {
-                      setCanvasStatus("error");
-                      setCanvasMsg(e instanceof Error ? e.message : "Connection failed");
-                    }
-                  }}
-                  disabled={!canvasUrl.trim() || !canvasToken.trim() || canvasStatus === "testing"}
-                  className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-60"
-                >
-                  {canvasStatus === "testing" ? "Testing…" : canvasStatus === "ok" ? "✓ Connected" : "Test & save"}
-                </button>
-                {canvasMsg && (
-                  <span className={`text-sm font-semibold ${canvasStatus === "error" ? "text-danger-ink" : "text-green-600"}`}>
-                    {canvasMsg}
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
@@ -178,6 +267,21 @@ export default function Settings() {
       </div>
     </div>
   );
+}
+
+/* Listens for postMessage from the Canvas OAuth popup window. */
+function OAuthListener({ onToken }: { onToken: (sessionId: string) => void }) {
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (e.data?.type === "canvas-oauth" && e.data?.sessionId) {
+        onToken(e.data.sessionId as string);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [onToken]);
+  return null;
 }
 
 function Field({

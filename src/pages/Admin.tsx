@@ -1,8 +1,8 @@
 /* Owner portal — manage the AI API key. Protected by the admin password
    (set as ADMIN_PASSWORD env var on Vercel). */
 
-import { useState } from "react";
-import { KeyRound, Lock, Shield, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import { GraduationCap, KeyRound, Lock, Shield, Zap } from "lucide-react";
 import { detectProvider } from "../lib/engine/keys";
 
 export default function Admin() {
@@ -13,15 +13,31 @@ export default function Admin() {
   const [msg, setMsg] = useState("");
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
 
+  // Canvas OAuth state
+  const [canvasClientId, setCanvasClientId] = useState("");
+  const [canvasClientSecret, setCanvasClientSecret] = useState("");
+  const [canvasOAuthUrl, setCanvasOAuthUrl] = useState("");
+  const [canvasOAuthStatus, setCanvasOAuthStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [canvasOAuthMsg, setCanvasOAuthMsg] = useState("");
+  const [canvasOAuthConfigured, setCanvasOAuthConfigured] = useState(false);
+
   // Check current key provider on mount
-  useState(() => {
+  useEffect(() => {
     fetch("/api/admin?action=get-key")
       .then((r) => r.json())
       .then((d) => {
         if (d.key) setCurrentProvider(detectProvider(d.key));
       })
       .catch(() => {});
-  });
+    // Check Canvas OAuth config
+    fetch("/api/admin?action=get-canvas-oauth")
+      .then((r) => r.json())
+      .then((d) => {
+        setCanvasOAuthConfigured(d.configured);
+        if (d.canvasUrl) setCanvasOAuthUrl(d.canvasUrl);
+      })
+      .catch(() => {});
+  }, []);
 
   async function login() {
     setMsg("");
@@ -69,6 +85,39 @@ export default function Admin() {
     } catch {
       setStatus("error");
       setMsg("Network error");
+    }
+  }
+
+  async function saveCanvasOAuth() {
+    setCanvasOAuthStatus("saving");
+    setCanvasOAuthMsg("");
+    try {
+      const pw = sessionStorage.getItem("admin_pw") || password;
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${pw}`,
+        },
+        body: JSON.stringify({
+          action: "set-canvas-oauth",
+          clientId: canvasClientId,
+          clientSecret: canvasClientSecret,
+          canvasUrl: canvasOAuthUrl,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setCanvasOAuthStatus("saved");
+        setCanvasOAuthConfigured(true);
+        setTimeout(() => setCanvasOAuthStatus("idle"), 2500);
+      } else {
+        setCanvasOAuthStatus("error");
+        setCanvasOAuthMsg(data.error || "Failed to save");
+      }
+    } catch {
+      setCanvasOAuthStatus("error");
+      setCanvasOAuthMsg("Network error");
     }
   }
 
@@ -160,6 +209,70 @@ export default function Admin() {
             The key is stored securely in Vercel KV and never exposed in client bundles.
             Changes take effect immediately for new sessions.
           </p>
+        </div>
+
+        {/* Canvas OAuth */}
+        <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
+          <label className="flex items-center gap-2 font-display font-bold">
+            <GraduationCap className="size-5 text-accent" />
+            Canvas OAuth
+          </label>
+          <p className="mt-1 text-sm text-ink-faint">
+            Set up OAuth so users can sign in with Canvas instead of entering a token.
+            Create a Developer Key on your Canvas instance (Admin → Developer Keys)
+            with redirect URI: <code className="text-xs bg-panel px-1 rounded">/api/canvas-oauth?action=callback</code>
+          </p>
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-ink-dim">Canvas URL</label>
+              <input
+                type="text"
+                value={canvasOAuthUrl}
+                onChange={(e) => setCanvasOAuthUrl(e.target.value)}
+                placeholder="https://canvas.institution.edu"
+                className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-ink-dim">Client ID</label>
+              <input
+                type="text"
+                value={canvasClientId}
+                onChange={(e) => setCanvasClientId(e.target.value)}
+                placeholder="10000000000001"
+                className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-ink-dim">Client Secret</label>
+              <input
+                type="password"
+                value={canvasClientSecret}
+                onChange={(e) => setCanvasClientSecret(e.target.value)}
+                placeholder="Canvas developer key secret"
+                className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveCanvasOAuth}
+                disabled={!canvasClientId.trim() || !canvasClientSecret.trim() || !canvasOAuthUrl.trim() || canvasOAuthStatus === "saving"}
+                className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-60"
+              >
+                {canvasOAuthStatus === "saving" ? "Saving…" : canvasOAuthStatus === "saved" ? "✓ Saved" : "Save OAuth config"}
+              </button>
+              {canvasOAuthConfigured && (
+                <span className="text-xs font-semibold text-green-600">✓ OAuth is configured</span>
+              )}
+            </div>
+            {canvasOAuthStatus === "error" && (
+              <p className="text-xs font-semibold text-danger-ink">{canvasOAuthMsg}</p>
+            )}
+            <p className="text-xs text-ink-faint">
+              Stored in Vercel KV. Users will see a "Sign in with Canvas" button in Settings
+              when OAuth is configured. Manual token entry remains available as a fallback.
+            </p>
+          </div>
         </div>
       </div>
     </div>
