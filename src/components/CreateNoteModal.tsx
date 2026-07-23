@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { FileAudio, FileText, Link2, Upload, X } from "lucide-react";
+import { FileText, Link2, Upload, X } from "lucide-react";
 import type { IngestInput } from "../lib/ingest";
 import type { SourceKind } from "../lib/types";
 
-export type NoteSource = "link" | "document" | "audio";
+export type NoteSource = "link" | "document";
 
 const meta: Record<NoteSource, { icon: typeof Link2; iconBg: string }> = {
   link: { icon: Link2, iconBg: "bg-red-500" },
   document: { icon: FileText, iconBg: "bg-accent" },
-  audio: { icon: FileAudio, iconBg: "bg-accent" },
 };
 
 function kindForFile(name: string): SourceKind {
@@ -39,12 +38,10 @@ export default function CreateNoteModal({
     if (source === "link") {
       const u = url.trim();
       onGenerate([{ kind: "url", url: u }]);
-    } else if (source === "document") {
+    } else {
       onGenerate(
         files.map((f) => ({ kind: kindForFile(f.name), file: f, filename: f.name })),
       );
-    } else {
-      onGenerate(files.map((f) => ({ kind: "audio", file: f, filename: f.name })));
     }
   }
 
@@ -89,15 +86,6 @@ export default function CreateNoteModal({
           <Dropzone
             label="Drag documents here, or click to upload"
             accept=".pdf,.doc,.docx,.txt,.md"
-            onFiles={setFiles}
-            files={files}
-          />
-        )}
-
-        {source === "audio" && (
-          <Dropzone
-            label="Drag an audio file here, or click to upload (MP3, WAV, M4A, etc.)"
-            accept="audio/*,video/*"
             onFiles={setFiles}
             files={files}
           />

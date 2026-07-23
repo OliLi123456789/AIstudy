@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronRight,
-  FileAudio,
   FilePlus2,
   FileText,
-  FolderPlus,
   GraduationCap,
   Link2,
   Loader2,
@@ -28,14 +26,12 @@ const creationCards: {
   icon: typeof FilePlus2;
 }[] = [
   { source: "blank", title: "Blank document", subtitle: "Start from scratch", icon: FilePlus2 },
-  { source: "audio", title: "Upload audio", subtitle: "Transcribe an audio file", icon: FileAudio },
   { source: "document", title: "Document upload", subtitle: "Any PDF, DOC, PPT, etc", icon: FileText },
   { source: "link", title: "Website link", subtitle: "Any website URL", icon: Link2 },
   { source: "canvas", title: "Canvas import", subtitle: "From your LMS courses", icon: GraduationCap },
 ];
 
 function sourceIcon(kind: SourceKind) {
-  if (kind === "audio") return { Icon: FileAudio, color: "text-accent bg-accent-softer" };
   if (kind === "pdf" || kind === "docx") return { Icon: FileText, color: "text-accent bg-accent-softer" };
   if (kind === "url") return { Icon: Link2, color: "text-accent bg-accent-softer" };
   return { Icon: FileText, color: "text-accent bg-accent-softer" };
@@ -58,7 +54,6 @@ function relTime(ms: number): string {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { repo, engine, prefs, version, bump } = useApp();
-  const [tab, setTab] = useState<"mine" | "shared">("mine");
   const [modal, setModal] = useState<NoteSource | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [query, setQuery] = useState("");
@@ -180,42 +175,16 @@ export default function Dashboard() {
       )}
 
       <div className="mt-8 flex items-center justify-between">
-        <div className="flex rounded-full border border-edge bg-panel p-1">
-          {(
-            [
-              ["mine", "My Notes"],
-              ["shared", "Shared with Me"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-                tab === key ? "bg-card text-ink shadow-soft" : "text-ink-faint hover:text-ink"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <button className="flex items-center gap-2 rounded-xl border border-edge bg-card px-4 py-2 text-sm font-semibold shadow-soft hover:bg-card-hover">
-          <FolderPlus className="size-4" />
-          New Folder
-        </button>
+        <h2 className="font-display text-lg font-bold">My Notes</h2>
       </div>
 
-      {tab === "shared" ? (
-        <Empty
-          title="Nothing shared with you yet"
-          sub="Notes classmates share with you will appear here."
-        />
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <Empty
           title={query ? "No matching notes" : "No notes yet"}
           sub={
             query
               ? "Try a different search."
-              : "Create your first note from a recording, document, or link above."
+              : "Create your first note from a document, website link, or Canvas course above."
           }
         />
       ) : (

@@ -11,7 +11,6 @@ import {
   Loader2,
   Menu,
   MessageCircle,
-  Mic,
   MoreVertical,
   Palette,
 } from "lucide-react";
@@ -21,7 +20,6 @@ import BlockEditor from "../components/BlockEditor";
 import Assistant from "../components/Assistant";
 import FlashcardsView from "../components/FlashcardsView";
 import QuizView from "../components/QuizView";
-import PodcastPanel from "../components/PodcastPanel";
 import {
   downloadText,
   exportDocxHtml,
@@ -34,7 +32,6 @@ import type { Block, Note } from "../lib/types";
 const railViews = [
   { view: "editor", icon: FileText, label: "Editor" },
   { view: "chat", icon: MessageCircle, label: "Chat" },
-  { view: "podcast", icon: Mic, label: "Podcast" },
   { view: "flashcards", icon: Layers, label: "Flashcards" },
   { view: "quiz", icon: ListChecks, label: "Quiz" },
 ];
@@ -120,8 +117,6 @@ export default function NoteView() {
           <EditorView note={note} onNote={setNote} />
         ) : view === "chat" ? (
           <Assistant note={note} variant="hero" />
-        ) : view === "podcast" ? (
-          <PodcastPanel note={note} />
         ) : view === "flashcards" ? (
           <FlashcardsView note={note} />
         ) : view === "quiz" ? (
