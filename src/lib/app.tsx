@@ -36,9 +36,9 @@ export function getRepo(): Promise<Repo> {
   return repoPromise;
 }
 
-/* Build the engine from the build-time API key. Returns null if not configured. */
+/* Build the engine from the server-stored API key. Returns null if not configured. */
 export async function buildEngine(): Promise<Engine | null> {
-  const key = loadApiKey();
+  const key = await loadApiKey();
   const provider = detectProvider(key);
   if (!provider) return null;
   return resilient(

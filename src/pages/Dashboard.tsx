@@ -6,6 +6,7 @@ import {
   FilePlus2,
   FileText,
   FolderPlus,
+  GraduationCap,
   Link2,
   Loader2,
   MoreVertical,
@@ -21,7 +22,7 @@ import { uuid, now } from "../lib/ids";
 import type { Job, Note, SourceKind } from "../lib/types";
 
 const creationCards: {
-  source: NoteSource | "blank";
+  source: NoteSource | "blank" | "canvas";
   title: string;
   subtitle: string;
   icon: typeof FilePlus2;
@@ -30,6 +31,7 @@ const creationCards: {
   { source: "audio", title: "Upload audio", subtitle: "Transcribe an audio file", icon: FileAudio },
   { source: "document", title: "Document upload", subtitle: "Any PDF, DOC, PPT, etc", icon: FileText },
   { source: "link", title: "Website link", subtitle: "Any website URL", icon: Link2 },
+  { source: "canvas", title: "Canvas import", subtitle: "From your LMS courses", icon: GraduationCap },
 ];
 
 function sourceIcon(kind: SourceKind) {
@@ -152,7 +154,11 @@ export default function Dashboard() {
         {creationCards.map(({ source, title, subtitle, icon: Icon }) => (
           <button
             key={title}
-            onClick={() => (source === "blank" ? createBlank() : setModal(source))}
+            onClick={() => {
+              if (source === "blank") createBlank();
+              else if (source === "canvas") navigate("/canvas");
+              else setModal(source);
+            }}
             className="group flex items-center gap-4 rounded-card border border-edge bg-card p-4 text-left shadow-soft transition hover:bg-card-hover"
           >
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent-softer">

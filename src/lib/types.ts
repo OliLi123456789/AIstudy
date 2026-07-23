@@ -174,4 +174,7 @@ export interface Job {
 export interface EnginePrefs {
   onboarded: boolean;
   language: string;
+  /* Canvas LMS integration — stored per-user in localStorage. */
+  canvasUrl?: string;
+  canvasToken?: string;
 }

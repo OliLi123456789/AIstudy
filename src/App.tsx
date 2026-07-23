@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NoteView from "./pages/NoteView";
 import Onboarding from "./pages/Onboarding";
+import Admin from "./pages/Admin";
+import CanvasBrowse from "./pages/CanvasBrowse";
 import { useApp } from "./lib/app";
 
 export default function App() {
@@ -27,8 +29,10 @@ export default function App() {
   return (
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/admin" element={<Admin />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/canvas" element={<CanvasBrowse />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="/notes/:id" element={<Navigate to="editor" replace />} />

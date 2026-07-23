@@ -1,20 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Camera,
   Copy,
   Download,
+  GraduationCap,
   Pencil,
   Settings as SettingsIcon,
   Zap,
 } from "lucide-react";
 import { useApp } from "../lib/app";
 import { loadApiKey, detectProvider } from "../lib/engine/keys";
+import { createCanvasClient } from "../lib/canvas";
 import { exportMarkdown, downloadText } from "../lib/export";
 
 export default function Settings() {
-  const { prefs, repo } = useApp();
+  const { prefs, savePrefs, repo } = useApp();
   const [exportMsg, setExportMsg] = useState("");
-  const key = loadApiKey();
+  const [canvasUrl, setCanvasUrl] = useState(prefs.canvasUrl ?? "");
+  const [canvasToken, setCanvasToken] = useState(prefs.canvasToken ?? "");
+  const [canvasStatus, setCanvasStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
+  const [canvasMsg, setCanvasMsg] = useState("");
+  const [key, setKey] = useState("");
+
+  useEffect(() => {
+    loadApiKey().then(setKey);
+  }, []);
+
   const provider = key ? detectProvider(key) : null;
 
   return (
@@ -71,6 +82,66 @@ export default function Settings() {
                   {provider === "anthropic" ? "Anthropic" : "OpenAI"}
                 </span>
               )}
+            </div>
+          </div>
+
+          <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
+            <h2 className="flex items-center gap-2 font-display text-xl font-bold">
+              <GraduationCap className="size-5 text-accent" />
+              Canvas LMS
+            </h2>
+            <p className="mt-1 text-sm text-ink-faint">
+              Connect your school's Canvas account to import courses and assignments.
+              Get your token from Canvas → Account → Settings → Approved Integrations.
+            </p>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-sm font-semibold text-ink-dim">Canvas URL</label>
+                <input
+                  type="text"
+                  value={canvasUrl}
+                  onChange={(e) => setCanvasUrl(e.target.value)}
+                  placeholder="https://canvas.institution.edu"
+                  className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-ink-dim">Access Token</label>
+                <input
+                  type="password"
+                  value={canvasToken}
+                  onChange={(e) => setCanvasToken(e.target.value)}
+                  placeholder="Canvas personal access token"
+                  className="mt-1 w-full rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none placeholder:text-ink-faint"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    setCanvasStatus("testing");
+                    setCanvasMsg("");
+                    try {
+                      const client = createCanvasClient(canvasToken.trim(), canvasUrl.trim());
+                      const profile = await client.validate();
+                      setCanvasStatus("ok");
+                      setCanvasMsg(`Connected as ${profile.name}`);
+                      savePrefs({ ...prefs, canvasUrl: canvasUrl.trim(), canvasToken: canvasToken.trim() });
+                    } catch (e) {
+                      setCanvasStatus("error");
+                      setCanvasMsg(e instanceof Error ? e.message : "Connection failed");
+                    }
+                  }}
+                  disabled={!canvasUrl.trim() || !canvasToken.trim() || canvasStatus === "testing"}
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-60"
+                >
+                  {canvasStatus === "testing" ? "Testing…" : canvasStatus === "ok" ? "✓ Connected" : "Test & save"}
+                </button>
+                {canvasMsg && (
+                  <span className={`text-sm font-semibold ${canvasStatus === "error" ? "text-danger-ink" : "text-green-600"}`}>
+                    {canvasMsg}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

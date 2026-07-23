@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import {
   ChevronsLeft,
   ChevronsRight,
+  GraduationCap,
   Home,
   Palette,
   PenLine,
@@ -12,6 +13,7 @@ import { toggleTheme } from "../lib/theme";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: Home },
+  { to: "/canvas", label: "Canvas", icon: GraduationCap },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -30,7 +32,7 @@ export default function AppShell() {
             <div className="flex items-center gap-2">
               <PenLine className="size-5 text-accent" />
               <span className="font-display text-lg font-semibold tracking-tight">
-                nitro ai
+                AIstudy
               </span>
             </div>
           )}
