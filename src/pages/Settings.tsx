@@ -242,7 +242,8 @@ export default function Settings() {
             <p className="mt-1 text-sm text-ink-faint">
               AIstudy is free and open source (AGPL-3.0). Your notes are yours —
               export any single note as Markdown, PDF, or Word from its menu, or
-              export everything at once here. Nothing is ever locked behind a paywall.
+              export everything at once here. Notes not opened for 30 days are
+              automatically deleted to keep your browser storage clean.
             </p>
             <div className="mt-4 flex items-center gap-3">
               <button

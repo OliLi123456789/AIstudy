@@ -82,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let alive = true;
     (async () => {
       const r = await getRepo();
+      await r.cleanupStale(30).catch(() => {});
       await reconcileJobs(r).catch(() => {});
       const e = await buildEngine().catch(() => null);
       if (!alive) return;

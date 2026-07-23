@@ -112,4 +112,21 @@ export class Repo {
     (await this.store.all<Job>(COLLECTIONS.jobs)).filter(
       (j) => j.status === "running" || j.status === "queued",
     );
+
+  /* Delete notes (and all linked data) not opened in `days` days.
+     Returns the count of removed notes. */
+  cleanupStale = async (days = 30): Promise<number> => {
+    const cutoff = Date.now() - days * 86400000;
+    const notes = await this.store.all<Note>(COLLECTIONS.notes);
+    const stale = notes.filter((n) => n.lastOpenedAt < cutoff);
+    for (const n of stale) await this.deleteNote(n.id);
+    // Also clean up orphaned folders (no notes reference them)
+    const folders = await this.store.all<Folder>(COLLECTIONS.folders);
+    const remaining = await this.store.all<Note>(COLLECTIONS.notes);
+    const usedFolders = new Set(remaining.map((n) => n.folderId).filter(Boolean));
+    for (const f of folders) {
+      if (!usedFolders.has(f.id)) await this.store.delete(COLLECTIONS.folders, f.id);
+    }
+    return stale.length;
+  };
 }
