@@ -26,10 +26,11 @@ export function createEngine(opts: CreateEngineOptions): Engine {
   switch (opts.provider) {
     case "anthropic":
       return new AnthropicEngine(key, opts.model);
+    case "deepseek":
+      return new OpenAIEngine("deepseek", key, opts.model);
     case "openai":
-      return new OpenAIEngine(key, opts.model);
     default:
-      throw new EngineError("A provider (openai or anthropic) is required.", "unknown");
+      return new OpenAIEngine("openai", key, opts.model);
   }
 }
 

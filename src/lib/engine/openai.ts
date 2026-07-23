@@ -1,5 +1,5 @@
-/* OpenAI implementation of the Engine interface. Cloud mode, provider "openai".
-   Uses the OpenAI REST API directly via `fetch` — no SDK dependency. */
+/* OpenAI-compatible implementation of the Engine interface. Supports OpenAI,
+   DeepSeek, and any other OpenAI-format API by swapping baseUrl + models. */
 
 import type {
   ChatMessage,
@@ -13,19 +13,68 @@ import type {
   TtsOptions,
 } from "./types";
 import { EngineError } from "./types";
+import type { Provider } from "../types";
 
-const BASE_URL = "https://api.openai.com/v1";
+interface ProviderConfig {
+  baseUrl: string;
+  fastModel: string;
+  strongModel: string;
+  hasTranscription: boolean;
+  hasTts: boolean;
+  hasEmbeddings: boolean;
+}
+
+const PROVIDERS: Record<Provider, ProviderConfig> = {
+  openai: {
+    baseUrl: "https://api.openai.com/v1",
+    fastModel: "gpt-4o-mini",
+    strongModel: "gpt-4o",
+    hasTranscription: true,
+    hasTts: true,
+    hasEmbeddings: true,
+  },
+  deepseek: {
+    baseUrl: "https://api.deepseek.com/v1",
+    fastModel: "deepseek-chat",
+    strongModel: "deepseek-chat",
+    hasTranscription: false,
+    hasTts: false,
+    hasEmbeddings: false,
+  },
+  anthropic: {
+    // Anthropic has its own engine class; this entry exists for type coverage
+    // but should never be used — createEngine routes to AnthropicEngine instead.
+    baseUrl: "https://api.anthropic.com/v1",
+    fastModel: "claude-3-5-haiku-latest",
+    strongModel: "claude-sonnet-4-20250514",
+    hasTranscription: false,
+    hasTts: false,
+    hasEmbeddings: false,
+  },
+};
 
 export class OpenAIEngine implements Engine {
-  readonly provider = "openai" as const;
+  readonly provider: Provider;
+  private readonly baseUrl: string;
+  private readonly cfg: ProviderConfig;
 
   constructor(
+    provider: Provider,
     private readonly apiKey: string,
     private readonly modelOverride?: string,
-  ) {}
+  ) {
+    this.provider = provider;
+    this.cfg = PROVIDERS[provider];
+    this.baseUrl = this.cfg.baseUrl;
+  }
 
   capabilities(): EngineCapabilities {
-    return { chat: true, transcription: true, tts: true, embeddings: true };
+    return {
+      chat: true,
+      transcription: this.cfg.hasTranscription,
+      tts: this.cfg.hasTts,
+      embeddings: this.cfg.hasEmbeddings,
+    };
   }
 
   async complete(opts: CompletionOptions, onToken?: TokenHandler): Promise<string> {
@@ -37,7 +86,8 @@ export class OpenAIEngine implements Engine {
       ...(opts.maxTokens !== undefined ? { max_tokens: opts.maxTokens } : {}),
     }, opts.signal);
 
-    if (!res.body) throw new EngineError("OpenAI returned an empty stream.", "unknown");
+    const label = this.provider === "deepseek" ? "DeepSeek" : "OpenAI";
+    if (!res.body) throw new EngineError(`${label} returned an empty stream.`, "unknown");
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -91,6 +141,9 @@ export class OpenAIEngine implements Engine {
   }
 
   async transcribe(audio: Blob, signal?: AbortSignal): Promise<TranscriptResult> {
+    if (!this.cfg.hasTranscription) {
+      throw new EngineError("Transcription is not supported by this provider.", "unsupported");
+    }
     const form = new FormData();
     form.append("file", audio, "audio.webm");
     form.append("model", "whisper-1");
@@ -98,7 +151,7 @@ export class OpenAIEngine implements Engine {
 
     let res: Response;
     try {
-      res = await fetch(`${BASE_URL}/audio/transcriptions`, {
+      res = await fetch(`${this.baseUrl}/audio/transcriptions`, {
         method: "POST",
         headers: { Authorization: `Bearer ${this.apiKey}` },
         body: form,
@@ -121,46 +174,35 @@ export class OpenAIEngine implements Engine {
   }
 
   async tts(text: string, opts: TtsOptions): Promise<Blob> {
-    /* Try TTS models newest→oldest, falling through ONLY when a model is
-       inaccessible to this key/project (needs verification or isn't in the
-       project's model limits). Any other failure — auth, quota, network,
-       bad input — rethrows immediately since retrying a different model
-       won't help. */
+    if (!this.cfg.hasTts) {
+      throw new EngineError("Text-to-speech is not supported by this provider.", "unsupported");
+    }
+    /* Try TTS models newest→oldest for OpenAI */
     const models = ["gpt-4o-mini-tts", "tts-1", "tts-1-hd"];
     const tried: string[] = [];
     for (const model of models) {
       try {
         const res = await this.post(
           "/audio/speech",
-          {
-            model,
-            voice: opts.voice,
-            input: text,
-            ...(opts.format ? { response_format: opts.format } : {}),
-          },
+          { model, voice: opts.voice, input: text, ...(opts.format ? { response_format: opts.format } : {}) },
           opts.signal,
         );
         return res.blob();
       } catch (e) {
-        if (e instanceof EngineError && e.kind === "model_missing") {
-          tried.push(model);
-          continue;
-        }
+        if (e instanceof EngineError && e.kind === "model_missing") { tried.push(model); continue; }
         throw e;
       }
     }
-    /* Every candidate was inaccessible — name them all so the user knows
-       exactly which models to enable, not just the last one attempted. */
     throw new EngineError(
-      `Your OpenAI project can't access any text-to-speech model (tried ${tried.join(
-        ", ",
-      )}). Enable one at platform.openai.com → Settings → Project → Limits, ` +
-        `and if your account is new you may also need to verify your organization there.`,
+      `Your project can't access any TTS model (tried ${tried.join(", ")}).`,
       "model_missing",
     );
   }
 
   async embed(texts: string[], signal?: AbortSignal): Promise<number[][]> {
+    if (!this.cfg.hasEmbeddings) {
+      throw new EngineError("Embeddings are not supported by this provider.", "unsupported");
+    }
     const res = await this.post("/embeddings", {
       model: "text-embedding-3-small",
       input: texts,
@@ -170,19 +212,33 @@ export class OpenAIEngine implements Engine {
   }
 
   async validate(): Promise<void> {
+    // DeepSeek doesn't have a /models endpoint — use /chat/completions with a minimal request
+    const label = this.provider === "deepseek" ? "DeepSeek" : "OpenAI";
     let res: Response;
     try {
-      res = await fetch(`${BASE_URL}/models`, { method: "GET", headers: this.headers() });
+      if (this.provider === "deepseek") {
+        res = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: this.headers(),
+          body: JSON.stringify({
+            model: this.cfg.fastModel,
+            messages: [{ role: "user", content: "hi" }],
+            max_tokens: 1,
+          }),
+        });
+      } else {
+        res = await fetch(`${this.baseUrl}/models`, { method: "GET", headers: this.headers() });
+      }
     } catch (err) {
       throw toNetworkError(err);
     }
-    if (res.status === 401) throw new EngineError("Invalid OpenAI API key.", "auth");
+    if (res.status === 401) throw new EngineError(`Invalid ${label} API key.`, "auth");
     if (!res.ok) throw await mapError(res);
   }
 
   private resolveModel(tier?: "fast" | "strong"): string {
     if (this.modelOverride) return this.modelOverride;
-    return tier === "strong" ? "gpt-4o" : "gpt-4o-mini";
+    return tier === "strong" ? this.cfg.strongModel : this.cfg.fastModel;
   }
 
   private headers(): Record<string, string> {
@@ -196,7 +252,7 @@ export class OpenAIEngine implements Engine {
   private async post(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Response> {
     let res: Response;
     try {
-      res = await fetch(`${BASE_URL}${path}`, {
+      res = await fetch(`${this.baseUrl}${path}`, {
         method: "POST",
         headers: this.headers(),
         body: JSON.stringify(body),

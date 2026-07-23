@@ -17,7 +17,7 @@ import { memoryStore } from "./db/memory";
 import { createEngine } from "./engine";
 import type { Engine } from "./engine/types";
 import { resilient } from "./engine/resilient";
-import { detectProvider, loadApiKey } from "./engine/keys";
+import { detectProvider, loadApiKey, getProvider } from "./engine/keys";
 import { getEnginePrefs, saveEnginePrefs } from "./prefs";
 import type { EnginePrefs } from "./types";
 import { reconcileJobs } from "./generation/pipeline";
@@ -39,8 +39,8 @@ export function getRepo(): Promise<Repo> {
 /* Build the engine from the server-stored API key. Returns null if not configured. */
 export async function buildEngine(): Promise<Engine | null> {
   const key = await loadApiKey();
-  const provider = detectProvider(key);
-  if (!provider) return null;
+  const provider = getProvider() || detectProvider(key) || "openai";
+  if (!key) return null;
   return resilient(
     createEngine({
       provider,

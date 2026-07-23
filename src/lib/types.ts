@@ -11,7 +11,7 @@ export type SourceKind =
   | "audio"
   | "url";
 
-export type Provider = "openai" | "anthropic";
+export type Provider = "openai" | "anthropic" | "deepseek";
 
 /* ---- Notes & content ---------------------------------------------------- */
 

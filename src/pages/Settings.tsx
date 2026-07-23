@@ -9,7 +9,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useApp } from "../lib/app";
-import { loadApiKey, detectProvider } from "../lib/engine/keys";
+import { loadApiKey, detectProvider, getProvider } from "../lib/engine/keys";
 import { createCanvasClient } from "../lib/canvas";
 import { exportMarkdown, downloadText } from "../lib/export";
 
@@ -56,7 +56,7 @@ export default function Settings() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const provider = key ? detectProvider(key) : null;
+  const provider = getProvider() || (key ? detectProvider(key) : null);
 
   return (
     <div className="px-10 py-8">

@@ -4,11 +4,13 @@
 import { useEffect, useState } from "react";
 import { GraduationCap, KeyRound, Lock, Shield, Zap } from "lucide-react";
 import { detectProvider } from "../lib/engine/keys";
+import type { Provider } from "../lib/types";
 
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(false);
   const [newKey, setNewKey] = useState("");
+  const [provider, setProvider] = useState<Provider>("openai");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [msg, setMsg] = useState("");
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
@@ -27,6 +29,7 @@ export default function Admin() {
       .then((r) => r.json())
       .then((d) => {
         if (d.key) setCurrentProvider(detectProvider(d.key));
+        if (d.provider) setProvider(d.provider as Provider);
       })
       .catch(() => {});
     // Check Canvas OAuth config
@@ -71,7 +74,7 @@ export default function Admin() {
           "content-type": "application/json",
           authorization: `Bearer ${pw}`,
         },
-        body: JSON.stringify({ action: "set-key", key: newKey }),
+        body: JSON.stringify({ action: "set-key", key: newKey, provider }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -179,19 +182,32 @@ export default function Admin() {
             <KeyRound className="size-5 text-accent" />
             Set API Key
           </label>
-          <div className="mt-3 flex items-center gap-2 rounded-xl border border-edge bg-panel px-3 py-2.5">
-            <input
-              type="password"
-              value={newKey}
-              onChange={(e) => setNewKey(e.target.value)}
-              placeholder="sk-... (OpenAI) or sk-ant-... (Anthropic)"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
-            />
-            {detectProvider(newKey) && (
-              <span className="shrink-0 rounded-full bg-accent-softer px-2.5 py-1 text-xs font-bold text-accent">
-                {detectProvider(newKey) === "anthropic" ? "Anthropic" : "OpenAI"}
-              </span>
-            )}
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-ink-dim">Provider</label>
+              <div className="mt-1 flex rounded-full border border-edge bg-panel p-1 w-fit">
+                {(["openai", "deepseek", "anthropic"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setProvider(p)}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold ${
+                      provider === p ? "bg-accent text-white" : "text-ink-faint hover:text-ink"
+                    }`}
+                  >
+                    {p === "openai" ? "OpenAI" : p === "deepseek" ? "DeepSeek" : "Anthropic"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl border border-edge bg-panel px-3 py-2.5">
+              <input
+                type="password"
+                value={newKey}
+                onChange={(e) => setNewKey(e.target.value)}
+                placeholder={provider === "anthropic" ? "sk-ant-..." : "sk-..."}
+                className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
+              />
+            </div>
           </div>
           <div className="mt-3 flex items-center gap-3">
             <button

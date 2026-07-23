@@ -44,7 +44,7 @@ describe("OpenAIEngine", () => {
     const fetchMock = mockFetch(async () => streamResponse(chunks));
     vi.stubGlobal("fetch", fetchMock);
 
-    const engine = new OpenAIEngine("sk-test");
+    const engine = new OpenAIEngine("openai", "sk-test");
     const tokens: string[] = [];
     const text = await engine.complete(
       { messages: [{ role: "user", content: "hi" }] },
@@ -66,11 +66,11 @@ describe("OpenAIEngine", () => {
     const fetchMock = mockFetch(async () => streamResponse(["data: [DONE]\n\n"]));
     vi.stubGlobal("fetch", fetchMock);
 
-    const strong = new OpenAIEngine("sk-test");
+    const strong = new OpenAIEngine("openai", "sk-test");
     await strong.complete({ messages: [{ role: "user", content: "hi" }], tier: "strong" });
     expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string).model).toBe("gpt-4o");
 
-    const overridden = new OpenAIEngine("sk-test", "gpt-4o-2024-08-06");
+    const overridden = new OpenAIEngine("openai", "sk-test", "gpt-4o-2024-08-06");
     await overridden.complete({ messages: [{ role: "user", content: "hi" }], tier: "fast" });
     expect(JSON.parse(fetchMock.mock.calls[1][1]?.body as string).model).toBe("gpt-4o-2024-08-06");
   });
@@ -82,7 +82,7 @@ describe("OpenAIEngine", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const engine = new OpenAIEngine("sk-test");
+    const engine = new OpenAIEngine("openai", "sk-test");
     const result = await engine.structured<typeof payload>({
       messages: [{ role: "user", content: "extract the person" }],
       schema: { type: "object", properties: { name: { type: "string" }, age: { type: "number" } } },
@@ -102,7 +102,7 @@ describe("OpenAIEngine", () => {
       "fetch",
       mockFetch(async () => jsonResponse({ error: { message: "Incorrect API key" } }, 401)),
     );
-    const engine = new OpenAIEngine("sk-bad");
+    const engine = new OpenAIEngine("openai", "sk-bad");
     await expect(engine.validate()).rejects.toMatchObject({ name: "EngineError", kind: "auth" });
   });
 
@@ -113,7 +113,7 @@ describe("OpenAIEngine", () => {
         jsonResponse({ error: { message: "You exceeded your quota", code: "insufficient_quota" } }, 429),
       ),
     );
-    const engine = new OpenAIEngine("sk-test");
+    const engine = new OpenAIEngine("openai", "sk-test");
     await expect(
       engine.complete({ messages: [{ role: "user", content: "hi" }] }),
     ).rejects.toMatchObject({ name: "EngineError", kind: "quota" });
@@ -126,7 +126,7 @@ describe("OpenAIEngine", () => {
         throw new TypeError("Failed to fetch");
       }),
     );
-    const engine = new OpenAIEngine("sk-test");
+    const engine = new OpenAIEngine("openai", "sk-test");
     await expect(
       engine.complete({ messages: [{ role: "user", content: "hi" }] }),
     ).rejects.toMatchObject({ name: "EngineError", kind: "network" });
@@ -235,8 +235,12 @@ describe("createEngine", () => {
     ).toBeInstanceOf(AnthropicEngine);
   });
 
-  it("throws when missing an API key or provider", () => {
+  it("throws when missing an API key", () => {
     expect(() => createEngine({})).toThrow(EngineError);
-    expect(() => createEngine({ apiKey: "sk-x" })).toThrow(EngineError);
+  });
+
+  it("defaults to openai when no provider is specified", () => {
+    const engine = createEngine({ apiKey: "sk-x" });
+    expect(engine.provider).toBe("openai");
   });
 });

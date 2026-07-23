@@ -9,6 +9,7 @@
 import { kv } from "@vercel/kv";
 
 const KV_KEY = "aistudy:api_key";
+const KV_PROVIDER = "aistudy:api_provider";
 
 function auth(request: Request): Response | null {
   const pw = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -30,6 +31,14 @@ async function getKey(): Promise<string> {
   return process.env.VITE_API_KEY ?? "";
 }
 
+async function getProvider(): Promise<string> {
+  try {
+    const stored = await kv.get<string>(KV_PROVIDER);
+    if (stored) return stored;
+  } catch { /* KV not configured */ }
+  return process.env.VITE_AI_PROVIDER ?? "openai";
+}
+
 async function getCanvasOAuthConfig(): Promise<{
   clientId: string; clientSecret: string; canvasUrl: string;
 } | null> {
@@ -49,7 +58,8 @@ export async function GET(req: Request): Promise<Response> {
   if (action === "get-key") {
     // Public: the frontend needs this to build the engine.
     const key = await getKey();
-    return new Response(JSON.stringify({ key }), {
+    const provider = await getProvider();
+    return new Response(JSON.stringify({ key, provider }), {
       headers: { "content-type": "application/json", "cache-control": "no-store" },
     });
   }
@@ -82,7 +92,7 @@ export async function POST(req: Request): Promise<Response> {
     });
   }
 
-  const { action, password, key, clientId, clientSecret, canvasUrl } = body;
+  const { action, password, key, clientId, clientSecret, canvasUrl, provider } = body;
 
   // Login: just validate the password.
   if (action === "login") {
@@ -111,6 +121,7 @@ export async function POST(req: Request): Promise<Response> {
     }
     try {
       await kv.set(KV_KEY, key.trim());
+      if (provider) await kv.set(KV_PROVIDER, provider);
     } catch {
       return new Response(JSON.stringify({ error: "KV storage unavailable — set VITE_API_KEY env var instead" }), {
         status: 500,
