@@ -4,7 +4,6 @@
 import type { SourceKind } from "../types";
 import { ingestText } from "./text";
 import { ingestUrl } from "./url";
-import { ingestYoutube } from "./youtube";
 import { ingestPdf } from "./pdf";
 import { ingestDocx } from "./docx";
 
@@ -57,11 +56,6 @@ export async function ingest(input: IngestInput): Promise<IngestResult> {
     case "url": {
       if (!input.url) throw new Error("A URL is required to ingest a web page.");
       return ingestUrl(input.url);
-    }
-
-    case "youtube": {
-      if (!input.url) throw new Error("A YouTube URL is required.");
-      return ingestYoutube(input.url);
     }
 
     case "pdf": {

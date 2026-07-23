@@ -1,63 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { youtubeId, isYoutube } from "./youtube";
 import { ingestText } from "./text";
 import { ingest } from "./index";
-
-describe("youtubeId", () => {
-  it("extracts from watch?v= form", () => {
-    expect(youtubeId("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from watch?v= with extra query params", () => {
-    expect(youtubeId("https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from bare-host watch?v= (no www)", () => {
-    expect(youtubeId("https://youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from the mobile host", () => {
-    expect(youtubeId("https://m.youtube.com/watch?v=dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from youtu.be short links", () => {
-    expect(youtubeId("https://youtu.be/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from youtu.be short links with query params", () => {
-    expect(youtubeId("https://youtu.be/dQw4w9WgXcQ?si=abc123")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from /embed/ form", () => {
-    expect(youtubeId("https://www.youtube.com/embed/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("extracts from /shorts/ form", () => {
-    expect(youtubeId("https://www.youtube.com/shorts/dQw4w9WgXcQ")).toBe("dQw4w9WgXcQ");
-  });
-
-  it("returns null for non-youtube urls", () => {
-    expect(youtubeId("https://example.com")).toBeNull();
-    expect(youtubeId("https://vimeo.com/12345678")).toBeNull();
-  });
-
-  it("returns null for malformed or empty input", () => {
-    expect(youtubeId("not a url at all")).toBeNull();
-    expect(youtubeId("")).toBeNull();
-  });
-});
-
-describe("isYoutube", () => {
-  it("is true for youtube urls of any recognized form", () => {
-    expect(isYoutube("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).toBe(true);
-    expect(isYoutube("https://youtu.be/dQw4w9WgXcQ")).toBe(true);
-  });
-
-  it("is false for non-youtube urls", () => {
-    expect(isYoutube("https://example.com")).toBe(false);
-    expect(isYoutube("not a url")).toBe(false);
-  });
-});
 
 describe("ingestText", () => {
   it("trims surrounding whitespace", () => {
@@ -112,10 +55,6 @@ describe("ingest() routing", () => {
 
   it("rejects 'url' ingestion without a url", async () => {
     await expect(ingest({ kind: "url" })).rejects.toThrow();
-  });
-
-  it("rejects 'youtube' ingestion without a url", async () => {
-    await expect(ingest({ kind: "youtube" })).rejects.toThrow();
   });
 
   it("rejects 'pdf' ingestion without a file", async () => {

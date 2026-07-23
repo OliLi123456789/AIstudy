@@ -1,6 +1,6 @@
 export type Theme = "light" | "dark";
 
-const KEY = "nitroai.theme";
+const KEY = "aistudy.theme";
 
 export function getTheme(): Theme {
   const stored = localStorage.getItem(KEY);

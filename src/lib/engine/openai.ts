@@ -17,7 +17,6 @@ import { EngineError } from "./types";
 const BASE_URL = "https://api.openai.com/v1";
 
 export class OpenAIEngine implements Engine {
-  readonly mode = "cloud" as const;
   readonly provider = "openai" as const;
 
   constructor(

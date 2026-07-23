@@ -36,24 +36,15 @@ export function getRepo(): Promise<Repo> {
   return repoPromise;
 }
 
-/* Build the engine described by prefs. Returns null if not configured (no mode
-   picked, or cloud mode without a valid key). */
-export async function buildEngine(
-  prefs: EnginePrefs = getEnginePrefs(),
-): Promise<Engine | null> {
-  if (!prefs.mode) return null;
-  if (prefs.mode === "local") {
-    return resilient(createEngine({ mode: "local", model: prefs.localModel || undefined }));
-  }
-  const key = await loadApiKey();
+/* Build the engine from the build-time API key. Returns null if not configured. */
+export async function buildEngine(): Promise<Engine | null> {
+  const key = loadApiKey();
   const provider = detectProvider(key);
   if (!provider) return null;
   return resilient(
     createEngine({
-      mode: "cloud",
       provider,
       apiKey: key,
-      model: prefs.cloudModel || undefined,
     }),
   );
 }
@@ -65,7 +56,6 @@ interface AppCtx {
   ready: boolean;
   version: number;
   bump: () => void;
-  reloadEngine: () => void;
   savePrefs: (p: EnginePrefs) => void;
 }
 
@@ -80,17 +70,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
 
-  const reloadEngine = useCallback(() => {
-    const p = getEnginePrefs();
-    setPrefs(p);
-    buildEngine(p).then(setEngine);
-  }, []);
-
   const savePrefs = useCallback(
     (p: EnginePrefs) => {
       saveEnginePrefs(p);
       setPrefs(p);
-      buildEngine(p).then(setEngine);
     },
     [],
   );
@@ -112,8 +95,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AppCtx>(
-    () => ({ repo, engine, prefs, ready, version, bump, reloadEngine, savePrefs }),
-    [repo, engine, prefs, ready, version, bump, reloadEngine, savePrefs],
+    () => ({ repo, engine, prefs, ready, version, bump, savePrefs }),
+    [repo, engine, prefs, ready, version, bump, savePrefs],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

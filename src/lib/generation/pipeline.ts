@@ -74,7 +74,7 @@ export async function createNoteFromSources(
       const res = await ingest(inputs[i]);
       let text = res.text;
       if (res.needsTranscription && res.audio) {
-        if (engine.mode === "cloud" && res.audio.size > 24 * 1024 * 1024) {
+        if (res.audio.size > 24 * 1024 * 1024) {
           throw new Error(
             "This audio is over 24 MB — larger than the cloud transcription limit. " +
               "Use local transcription, or split it into shorter clips.",

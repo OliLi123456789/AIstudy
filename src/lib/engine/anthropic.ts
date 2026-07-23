@@ -25,7 +25,6 @@ const UNSUPPORTED_MESSAGE =
   "Anthropic does not support this operation; use an OpenAI key or local models.";
 
 export class AnthropicEngine implements Engine {
-  readonly mode = "cloud" as const;
   readonly provider = "anthropic" as const;
 
   constructor(

@@ -22,7 +22,6 @@ import { createNoteFromSources } from "./pipeline";
 /* A deterministic in-memory engine: no network. Returns canned output keyed by
    the structured schemaName, and a fixed markdown doc for completions. */
 class FakeEngine implements Engine {
-  readonly mode = "cloud" as const;
   calls: string[] = [];
   completeCalls = 0;
   capabilities(): EngineCapabilities {

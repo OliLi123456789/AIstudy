@@ -1,21 +1,14 @@
-/* The local server the desktop shell runs. Serves the built SPA (dist/) and the
- * native-helper endpoints the browser can't do itself:
- *   GET  /api/health               → liveness (the shell polls this)
- *   GET  /api/youtube-extract?url= → yt-dlp captions/audio
- *   GET  /api/local/status         → Ollama provisioning state
- *   GET  /api/local/setup          → SSE stream that installs/starts/pulls Ollama
+/* Minimal static server for the built SPA. Useful for local production testing.
+ * For deployment, use Vercel, Netlify, or any static host directly.
  *
- * Pure Node built-ins, no framework, so the packaged app stays small and has
- * no extra supply chain. Exported as startServer() so both the Electron main
- * process and a plain `node server/standalone.mjs` can run it.
+ *   GET  /api/health  → liveness check
+ *   *    /*            → serves dist/ with SPA fallback
  */
 
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extractYoutube } from "./ytdlp.mjs";
-import { provision, status } from "./ollama.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -68,52 +61,11 @@ function serveStatic(distDir, urlPath, res) {
   fs.createReadStream(filePath).pipe(res);
 }
 
-async function handleApi(req, res, url, opts) {
+async function handleApi(req, res, url, _opts) {
   const p = url.pathname;
 
   if (p === "/api/health") {
-    return sendJson(res, 200, { ok: true, service: "nitroai" });
-  }
-
-  if (p === "/api/youtube-extract") {
-    const target = url.searchParams.get("url");
-    if (!target) return sendJson(res, 400, { error: "missing url parameter" });
-    try {
-      const result = await extractYoutube(target, opts.binDir);
-      return sendJson(res, 200, result);
-    } catch (err) {
-      return sendJson(res, 502, { error: err instanceof Error ? err.message : "extraction failed" });
-    }
-  }
-
-  if (p === "/api/local/status") {
-    try {
-      return sendJson(res, 200, await status(opts.binDir));
-    } catch (err) {
-      return sendJson(res, 500, { error: err instanceof Error ? err.message : "status failed" });
-    }
-  }
-
-  if (p === "/api/local/setup") {
-    // Server-Sent Events: provisions Ollama and streams progress. Called ONLY
-    // when the user has chosen the local engine.
-    res.writeHead(200, {
-      "content-type": "text/event-stream",
-      "cache-control": "no-store",
-      connection: "keep-alive",
-    });
-    const emit = (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
-    try {
-      const result = await provision({
-        binDir: opts.binDir,
-        appOrigin: opts.appOrigin,
-        emit,
-      });
-      emit({ phase: "done", ...result });
-    } catch (err) {
-      emit({ phase: "error", message: err instanceof Error ? err.message : "setup failed" });
-    }
-    return res.end();
+    return sendJson(res, 200, { ok: true, service: "aistudy" });
   }
 
   return sendJson(res, 404, { error: "unknown endpoint" });

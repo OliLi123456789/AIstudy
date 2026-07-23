@@ -1,4 +1,4 @@
-/* NitroAI domain model — shared contract for db, engine, generation, and UI.
+/* AIstudy domain model — shared contract for db, engine, generation, and UI.
    Everything persisted lives here. IDs are uuid strings. Timestamps are epoch ms. */
 
 export type ID = string;
@@ -9,10 +9,8 @@ export type SourceKind =
   | "pdf"
   | "docx"
   | "audio"
-  | "youtube"
   | "url";
 
-export type EngineMode = "local" | "cloud";
 export type Provider = "openai" | "anthropic";
 
 /* ---- Notes & content ---------------------------------------------------- */
@@ -174,11 +172,6 @@ export interface Job {
 /* ---- Engine preferences ------------------------------------------------- */
 
 export interface EnginePrefs {
-  /* null until the user makes an explicit choice at onboarding — NO default. */
-  mode: EngineMode | null;
   onboarded: boolean;
-  /* Per-mode model selection; empty string = provider/engine default. */
-  cloudModel?: string;
-  localModel?: string;
   language: string;
 }

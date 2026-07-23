@@ -1,80 +1,21 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Camera,
-  CheckCircle2,
   Copy,
-  Cpu,
   Download,
-  KeyRound,
   Pencil,
   Settings as SettingsIcon,
+  Zap,
 } from "lucide-react";
 import { useApp } from "../lib/app";
-import {
-  clearApiKey,
-  detectProvider,
-  loadApiKey,
-  saveApiKey,
-} from "../lib/engine/keys";
-import { createEngine } from "../lib/engine";
-import { localSetupStatus } from "../lib/localSetup";
-import LocalSetupModal from "../components/LocalSetupModal";
+import { loadApiKey, detectProvider } from "../lib/engine/keys";
 import { exportMarkdown, downloadText } from "../lib/export";
-import type { EngineMode } from "../lib/types";
-
-const DATA_FOLDER =
-  typeof navigator !== "undefined" && navigator.platform.startsWith("Win")
-    ? "%APPDATA%\\NitroAI"
-    : "~/Library/Application Support/NitroAI";
 
 export default function Settings() {
-  const { prefs, savePrefs, repo } = useApp();
-  const [key, setKey] = useState("");
+  const { prefs, repo } = useApp();
   const [exportMsg, setExportMsg] = useState("");
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
-  const [msg, setMsg] = useState("");
-  const [localSetup, setLocalSetup] = useState(false);
-  const provider = detectProvider(key.trim());
-
-  useEffect(() => {
-    loadApiKey().then(setKey);
-  }, []);
-
-  function setMode(mode: EngineMode) {
-    if (mode === "local") {
-      // Switching to local provisions Ollama the same way onboarding does —
-      // install/start/pull as needed — before the engine is used.
-      void localSetupStatus().then((s) => {
-        const ready = s?.serving && s.hasChatModel && s.hasEmbedModel;
-        if (s && !ready) {
-          setLocalSetup(true);
-          return;
-        }
-        savePrefs({ ...prefs, mode });
-      });
-      return;
-    }
-    savePrefs({ ...prefs, mode });
-  }
-
-  async function saveKey() {
-    setStatus("saving");
-    setMsg("");
-    try {
-      const p = detectProvider(key.trim());
-      if (!p) throw new Error("Key must start with sk- (OpenAI) or sk-ant- (Anthropic).");
-      await createEngine({ mode: "cloud", provider: p, apiKey: key.trim() }).validate();
-      await saveApiKey(key.trim());
-      savePrefs({ ...prefs, mode: "cloud" });
-      setStatus("saved");
-      setTimeout(() => setStatus("idle"), 2500);
-    } catch (e) {
-      setStatus("error");
-      setMsg(e instanceof Error ? e.message : "Could not validate the key.");
-    }
-  }
+  const key = loadApiKey();
+  const provider = key ? detectProvider(key) : null;
 
   return (
     <div className="px-10 py-8">
@@ -82,7 +23,7 @@ export default function Settings() {
         <SettingsIcon className="size-6 text-accent" />
         <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
       </div>
-      <p className="mt-1 text-lg text-ink-faint">Manage your profile, engine, and preferences</p>
+      <p className="mt-1 text-lg text-ink-faint">Manage your profile and preferences</p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[380px_1fr]">
         <div className="overflow-hidden rounded-card border border-edge bg-card shadow-soft">
@@ -109,7 +50,6 @@ export default function Settings() {
 
             <div className="mt-5 w-full space-y-3">
               <Field label="Language" value={prefs.language} editable />
-              <Field label="Data folder" value={DATA_FOLDER} copyable />
             </div>
           </div>
         </div>
@@ -119,96 +59,19 @@ export default function Settings() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-                  <Cpu className="size-5 text-accent" />
+                  <Zap className="size-5 text-accent" />
                   AI Engine
                 </h2>
                 <p className="mt-1 text-sm text-ink-faint">
-                  Run everything locally for free, or bring your own API key for
-                  cloud-quality output.
+                  Powered by {provider === "anthropic" ? "Anthropic" : provider === "openai" ? "OpenAI" : "AI"} — no setup required. Just start creating.
                 </p>
               </div>
-              <div className="flex rounded-full border border-edge bg-panel p-1">
-                {(
-                  [
-                    ["local", "Local"],
-                    ["cloud", "Cloud"],
-                  ] as const
-                ).map(([k, label]) => (
-                  <button
-                    key={k}
-                    onClick={() => setMode(k as EngineMode)}
-                    className={`rounded-full px-4 py-1.5 text-sm font-semibold ${
-                      prefs.mode === k ? "bg-accent text-white" : "text-ink-faint hover:text-ink"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              {provider && (
+                <span className="shrink-0 rounded-full bg-accent-softer px-3 py-1.5 text-xs font-bold text-accent">
+                  {provider === "anthropic" ? "Anthropic" : "OpenAI"}
+                </span>
+              )}
             </div>
-
-            {prefs.mode === "cloud" ? (
-              <div className="mt-5">
-                <label className="text-sm font-semibold text-ink-dim">API key</label>
-                <div className="mt-1.5 flex items-center gap-2 rounded-xl border border-edge bg-panel px-3 py-2.5">
-                  <KeyRound className="size-4 text-ink-faint" />
-                  <input
-                    type="password"
-                    value={key}
-                    onChange={(e) => setKey(e.target.value)}
-                    placeholder="sk-... (OpenAI) or sk-ant-... (Anthropic) — auto-detected"
-                    className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
-                  />
-                  {provider && (
-                    <span className="shrink-0 rounded-full bg-accent-softer px-2.5 py-1 text-xs font-bold text-accent">
-                      {provider === "anthropic" ? "Anthropic" : "OpenAI"}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    onClick={saveKey}
-                    disabled={status === "saving"}
-                    className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-60"
-                  >
-                    {status === "saving" ? "Validating…" : "Save & validate"}
-                  </button>
-                  {status === "saved" && (
-                    <span className="flex items-center gap-1 text-sm font-semibold text-green-600">
-                      <CheckCircle2 className="size-4" /> Saved
-                    </span>
-                  )}
-                  {key && (
-                    <button
-                      onClick={async () => {
-                        await clearApiKey();
-                        setKey("");
-                      }}
-                      className="text-sm font-semibold text-ink-faint hover:text-danger-ink"
-                    >
-                      Remove key
-                    </button>
-                  )}
-                </div>
-                {status === "error" && (
-                  <p className="mt-2 text-xs font-semibold text-danger-ink">{msg}</p>
-                )}
-                <p className="mt-2 text-xs text-ink-faint">
-                  Stored in your system keychain, never in app files. One key powers
-                  every feature.
-                </p>
-              </div>
-            ) : (
-              <div className="mt-5 rounded-xl border border-edge bg-panel p-4">
-                <p className="text-sm font-semibold">Local models</p>
-                <p className="mt-1 text-sm text-ink-faint">
-                  Speech-to-text, note generation, podcast voices, and search run on
-                  this device via a local runtime (Ollama for text; Whisper &amp;
-                  Kokoro for audio). Start Ollama, or switch to a cloud key for the
-                  audio features.
-                </p>
-              </div>
-            )}
           </div>
 
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
@@ -217,7 +80,7 @@ export default function Settings() {
               Your data
             </h2>
             <p className="mt-1 text-sm text-ink-faint">
-              NitroAI is free and open source (AGPL-3.0). Your notes are yours —
+              AIstudy is free and open source (AGPL-3.0). Your notes are yours —
               export any single note as Markdown, PDF, or Word from its menu, or
               export everything at once here. Nothing is ever locked behind a paywall.
             </p>
@@ -230,7 +93,7 @@ export default function Settings() {
                     return;
                   }
                   const all = notes.map((n) => exportMarkdown(n)).join("\n\n---\n\n");
-                  downloadText("nitroai-notes.md", all, "text/markdown");
+                  downloadText("aistudy-notes.md", all, "text/markdown");
                   setExportMsg(`Exported ${notes.length} note${notes.length > 1 ? "s" : ""}.`);
                 }}
                 className="rounded-xl border border-edge bg-panel px-4 py-2 text-sm font-semibold shadow-soft hover:bg-card-hover"
@@ -242,16 +105,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-
-      {localSetup && (
-        <LocalSetupModal
-          onDone={() => {
-            setLocalSetup(false);
-            savePrefs({ ...prefs, mode: "local" });
-          }}
-          onCancel={() => setLocalSetup(false)}
-        />
-      )}
     </div>
   );
 }

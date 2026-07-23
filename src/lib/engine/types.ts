@@ -56,7 +56,6 @@ export interface EngineCapabilities {
 }
 
 export interface Engine {
-  readonly mode: "local" | "cloud";
   readonly provider?: Provider;
   capabilities(): EngineCapabilities;
 

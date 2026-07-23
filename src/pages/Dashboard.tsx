@@ -9,7 +9,6 @@ import {
   Link2,
   Loader2,
   MoreVertical,
-  Play,
   Search,
   Trash2,
 } from "lucide-react";
@@ -30,11 +29,10 @@ const creationCards: {
   { source: "blank", title: "Blank document", subtitle: "Start from scratch", icon: FilePlus2 },
   { source: "audio", title: "Upload audio", subtitle: "Transcribe an audio file", icon: FileAudio },
   { source: "document", title: "Document upload", subtitle: "Any PDF, DOC, PPT, etc", icon: FileText },
-  { source: "link", title: "Website link", subtitle: "YouTube or website link", icon: Link2 },
+  { source: "link", title: "Website link", subtitle: "Any website URL", icon: Link2 },
 ];
 
 function sourceIcon(kind: SourceKind) {
-  if (kind === "youtube") return { Icon: Play, color: "text-red-500 bg-red-500/10" };
   if (kind === "audio") return { Icon: FileAudio, color: "text-accent bg-accent-softer" };
   if (kind === "pdf" || kind === "docx") return { Icon: FileText, color: "text-accent bg-accent-softer" };
   if (kind === "url") return { Icon: Link2, color: "text-accent bg-accent-softer" };

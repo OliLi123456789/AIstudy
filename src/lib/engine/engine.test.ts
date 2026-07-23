@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OpenAIEngine } from "./openai";
 import { AnthropicEngine } from "./anthropic";
-import { LocalEngine } from "./local";
 import { createEngine } from "./index";
 import { EngineError } from "./types";
 
@@ -226,68 +225,18 @@ describe("AnthropicEngine", () => {
   });
 });
 
-describe("LocalEngine", () => {
-  it("complete() parses newline-delimited JSON chunks from Ollama", async () => {
-    const chunks = [
-      `${JSON.stringify({ message: { content: "Hel" }, done: false })}\n`,
-      `${JSON.stringify({ message: { content: "lo" }, done: false })}\n`,
-      `${JSON.stringify({ message: { content: "" }, done: true })}\n`,
-    ];
-    const fetchMock = mockFetch(async () => streamResponse(chunks));
-    vi.stubGlobal("fetch", fetchMock);
-
-    const engine = new LocalEngine();
-    const tokens: string[] = [];
-    const text = await engine.complete(
-      { messages: [{ role: "user", content: "hi" }] },
-      (t) => tokens.push(t),
-    );
-
-    expect(text).toBe("Hello");
-    expect(tokens).toEqual(["Hel", "lo"]);
-    const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:11434/api/chat");
-  });
-
-  it("transcribe() and tts() throw model_missing", async () => {
-    const engine = new LocalEngine();
-    await expect(engine.transcribe(new Blob(["audio"]))).rejects.toMatchObject({
-      name: "EngineError",
-      kind: "model_missing",
-    });
-    await expect(engine.tts("hi", { voice: "default" })).rejects.toMatchObject({
-      kind: "model_missing",
-    });
-  });
-
-  it("validate() throws model_missing when Ollama is unreachable", async () => {
-    vi.stubGlobal(
-      "fetch",
-      mockFetch(async () => {
-        throw new TypeError("fetch failed");
-      }),
-    );
-    const engine = new LocalEngine("http://localhost:11434");
-    await expect(engine.validate()).rejects.toMatchObject({
-      name: "EngineError",
-      kind: "model_missing",
-    });
-  });
-});
-
 describe("createEngine", () => {
-  it("returns the right class per mode/provider", () => {
-    expect(createEngine({ mode: "cloud", provider: "openai", apiKey: "sk-x" })).toBeInstanceOf(
+  it("returns the right class per provider", () => {
+    expect(createEngine({ provider: "openai", apiKey: "sk-x" })).toBeInstanceOf(
       OpenAIEngine,
     );
     expect(
-      createEngine({ mode: "cloud", provider: "anthropic", apiKey: "sk-ant-x" }),
+      createEngine({ provider: "anthropic", apiKey: "sk-ant-x" }),
     ).toBeInstanceOf(AnthropicEngine);
-    expect(createEngine({ mode: "local" })).toBeInstanceOf(LocalEngine);
   });
 
-  it("throws when cloud mode is missing an API key or provider", () => {
-    expect(() => createEngine({ mode: "cloud" })).toThrow(EngineError);
-    expect(() => createEngine({ mode: "cloud", apiKey: "sk-x" })).toThrow(EngineError);
+  it("throws when missing an API key or provider", () => {
+    expect(() => createEngine({})).toThrow(EngineError);
+    expect(() => createEngine({ apiKey: "sk-x" })).toThrow(EngineError);
   });
 });

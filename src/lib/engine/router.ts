@@ -25,12 +25,12 @@ export function supportsTask(engine: Engine, task: Task): boolean {
 export function unsupportedMessage(task: Task): string {
   switch (task) {
     case "chat":
-      return "This engine doesn't support chat. Switch to a cloud key or a chat-capable local model.";
+      return "This engine doesn't support chat.";
     case "transcription":
-      return "This engine doesn't support speech-to-text. Add an OpenAI key or install a local Whisper server.";
+      return "This engine doesn't support speech-to-text. Use an OpenAI key for transcription.";
     case "tts":
-      return "This engine doesn't support text-to-speech. Add an OpenAI key, or wait for local Kokoro support.";
+      return "This engine doesn't support text-to-speech. Use an OpenAI key for TTS.";
     case "embeddings":
-      return "This engine doesn't support embeddings. Add an OpenAI key or use a local embedding model.";
+      return "This engine doesn't support embeddings. Use an OpenAI key for embeddings.";
   }
 }

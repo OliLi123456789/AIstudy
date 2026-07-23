@@ -15,7 +15,7 @@ export default function App() {
     return (
       <div className="flex h-full items-center justify-center gap-2.5 bg-bg text-ink-faint">
         <Loader2 className="size-5 animate-spin text-accent" />
-        <span className="font-display">Loading NitroAI…</span>
+        <span className="font-display">Loading AIstudy…</span>
       </div>
     );
   }

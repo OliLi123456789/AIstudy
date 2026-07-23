@@ -1,16 +1,12 @@
 import type { EnginePrefs } from "./types";
 
-/* Engine preferences persist in localStorage. The API key is NOT here — it lives
-   in the OS keychain (Tauri) or a separate localStorage slot in web mode; see
-   engine/keys.ts. `mode` is null until the user explicitly picks at onboarding. */
+/* App preferences persist in localStorage. The API key is injected at build
+   time via VITE_API_KEY — no user key entry needed. */
 
-const KEY = "nitroai.prefs";
+const KEY = "aistudy.prefs";
 
 const defaults: EnginePrefs = {
-  mode: null,
   onboarded: false,
-  cloudModel: "",
-  localModel: "",
   language: "English",
 };
 

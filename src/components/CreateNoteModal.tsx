@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { FileAudio, FileText, Link2, Upload, X } from "lucide-react";
 import type { IngestInput } from "../lib/ingest";
-import { isYoutube } from "../lib/ingest/youtube";
 import type { SourceKind } from "../lib/types";
 
 export type NoteSource = "link" | "document" | "audio";
@@ -39,7 +38,7 @@ export default function CreateNoteModal({
     if (!ready || busy) return;
     if (source === "link") {
       const u = url.trim();
-      onGenerate([{ kind: isYoutube(u) ? "youtube" : "url", url: u }]);
+      onGenerate([{ kind: "url", url: u }]);
     } else if (source === "document") {
       onGenerate(
         files.map((f) => ({ kind: kindForFile(f.name), file: f, filename: f.name })),

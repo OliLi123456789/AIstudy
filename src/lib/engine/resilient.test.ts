@@ -5,7 +5,7 @@ import type { Engine } from "./types";
 
 function base(overrides: Partial<Engine>): Engine {
   return {
-    mode: "cloud",
+    provider: "openai",
     capabilities: () => ({ chat: true, transcription: false, tts: false, embeddings: false }),
     complete: async () => "x",
     structured: async () => ({}) as never,

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* NitroAI design tokens — semantic vars swap per theme via [data-theme] on <html>.
+/* AIstudy design tokens — semantic vars swap per theme via [data-theme] on <html>.
    Accent and geometry match docs/UI-SPEC.md; fonts substitute the commercial
    Clarika with Quicksand (headings/UI) + Nunito (long-form body). */
 
