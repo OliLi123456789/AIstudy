@@ -22,6 +22,7 @@ interface ProviderConfig {
   hasTranscription: boolean;
   hasTts: boolean;
   hasEmbeddings: boolean;
+  supportsJsonSchema: boolean;
 }
 
 const PROVIDERS: Record<Provider, ProviderConfig> = {
@@ -32,6 +33,7 @@ const PROVIDERS: Record<Provider, ProviderConfig> = {
     hasTranscription: true,
     hasTts: true,
     hasEmbeddings: true,
+    supportsJsonSchema: true,
   },
   deepseek: {
     baseUrl: "https://api.deepseek.com/v1",
@@ -40,6 +42,7 @@ const PROVIDERS: Record<Provider, ProviderConfig> = {
     hasTranscription: false,
     hasTts: false,
     hasEmbeddings: false,
+    supportsJsonSchema: false,
   },
   anthropic: {
     // Anthropic has its own engine class; this entry exists for type coverage
@@ -50,6 +53,7 @@ const PROVIDERS: Record<Provider, ProviderConfig> = {
     hasTranscription: false,
     hasTts: false,
     hasEmbeddings: false,
+    supportsJsonSchema: false,
   },
 };
 
@@ -120,23 +124,61 @@ export class OpenAIEngine implements Engine {
   }
 
   async structured<T>(opts: StructuredOptions<T>): Promise<T> {
+    const messages = buildMessages(opts);
+
+    if (this.cfg.supportsJsonSchema) {
+      // OpenAI native strict structured output
+      const res = await this.post("/chat/completions", {
+        model: this.resolveModel(opts.tier),
+        messages,
+        stream: false,
+        ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
+        ...(opts.maxTokens !== undefined ? { max_tokens: opts.maxTokens } : {}),
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: opts.schemaName, schema: opts.schema, strict: true },
+        },
+      }, opts.signal);
+
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (typeof content !== "string") {
+        throw new EngineError("No structured content returned.", "unknown");
+      }
+      return JSON.parse(content) as T;
+    }
+
+    // Fallback for providers without json_schema (DeepSeek):
+    // Use json_object mode + inject the schema into the system prompt.
+    const schemaStr = JSON.stringify(opts.schema, null, 2);
+    const systemMsg = messages[0]?.role === "system" ? messages[0] : null;
+    const userMsgs = systemMsg ? messages.slice(1) : messages;
+
+    const promptMessages = [
+      ...(systemMsg ? [systemMsg] : []),
+      {
+        role: "system" as const,
+        content: `You must respond with a JSON object that strictly follows this schema. Do not include any text outside the JSON:\n\`\`\`json\n${schemaStr}\n\`\`\``,
+      },
+      ...userMsgs,
+    ];
+
     const res = await this.post("/chat/completions", {
       model: this.resolveModel(opts.tier),
-      messages: buildMessages(opts),
+      messages: promptMessages,
       stream: false,
       ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
       ...(opts.maxTokens !== undefined ? { max_tokens: opts.maxTokens } : {}),
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: opts.schemaName, schema: opts.schema, strict: true },
-      },
+      response_format: { type: "json_object" },
     }, opts.signal);
 
     const json = await res.json();
-    const content = json.choices?.[0]?.message?.content;
+    let content = json.choices?.[0]?.message?.content;
     if (typeof content !== "string") {
-      throw new EngineError("OpenAI returned no structured content.", "unknown");
+      throw new EngineError("No structured content returned.", "unknown");
     }
+    // Strip markdown code fences if the model wrapped the JSON
+    content = content.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/, "").trim();
     return JSON.parse(content) as T;
   }
 
