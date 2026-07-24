@@ -95,6 +95,7 @@ export function flashcardsSystem(topics: string[]): string {
     "recognition. Tag each card with the single most relevant topic from this",
     `list: ${topics.join(", ")}.`,
     "Create thorough coverage — aim for 2–4 cards per topic.",
+    "For ANY math, use KaTeX notation: inline `$...$` and display `$$...$$`.",
   ].join("\n");
 }
 
@@ -134,6 +135,7 @@ export function quizSystem(opts: {
     "the exact answer, and correctIndex is 0; write the question with a ___ blank.",
     "correctIndex is the 0-based index of the correct option. Every question needs",
     "a one-sentence explanation of why the answer is correct. Tag each with a topic.",
+    "For ANY math, use KaTeX notation: inline `$...$` and display `$$...$$`.",
   ].join("\n");
 }
 
@@ -302,6 +304,7 @@ export function practiceTestSystem(opts: {
     opts.frqCount > 0 ? `- ${opts.frqCount} free-response questions (require short paragraph answers, include model answer + 3-5 key points to look for, tagged with topic)` : "",
     opts.essayCount > 0 ? `- ${opts.essayCount} essay prompts (require multi-paragraph analysis, include a rubric with 3-4 criteria each scored 1-5, and a model thesis statement, tagged with topic)` : "",
     "Cover the full breadth of the material. Questions should test understanding, not just recall.",
+    "For ANY math, use KaTeX notation: inline `$...$` and display `$$...$$`.",
   ].filter(Boolean).join("\n");
 }
 
