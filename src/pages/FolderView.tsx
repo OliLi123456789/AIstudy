@@ -18,7 +18,6 @@ import {
   Loader2,
   MessageCircle,
   Target,
-  TrendingUp,
   Upload,
   X,
 } from "lucide-react";
@@ -37,20 +36,11 @@ import {
 import type { Flashcard, Folder, Job, Note, QuizAttempt, QuizQuestion } from "../lib/types";
 
 const railViews = [
-  { view: "docs", icon: FileText, label: "Docs" },
-  { view: "progress", icon: BarChart3, label: "Progress" },
+  { view: "overview", icon: BarChart3, label: "Overview" },
   { view: "chat", icon: MessageCircle, label: "Chat" },
   { view: "flashcards", icon: Layers, label: "Flashcards" },
   { view: "quiz", icon: ListChecks, label: "Quiz" },
 ];
-
-function relTime(ms: number): string {
-  const s = Math.floor((Date.now() - ms) / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  return `${Math.floor(m / 60)}h ago`;
-}
 
 export default function FolderView() {
   const { folderId } = useParams();
@@ -58,7 +48,7 @@ export default function FolderView() {
   const { repo, engine, prefs, bump } = useApp();
   const [folder, setFolder] = useState<Folder | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [activeView, setActiveView] = useState("docs");
+  const [activeView, setActiveView] = useState("overview");
   const [studying, setStudying] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -179,62 +169,24 @@ export default function FolderView() {
           </div>
         )}
 
-        {activeView === "docs" && (
-          <div className="px-10 py-8">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">{folder.name}</h1>
-                <p className="mt-1 text-ink-faint">{notes.length} {notes.length === 1 ? "document" : "documents"}</p>
-              </div>
-              {notes.length > 0 && (
-                <div className="flex gap-2">
-                  <button onClick={studyAll} disabled={studying || !engine} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-50">
-                    {studying ? <Loader2 className="size-4 animate-spin" /> : <Layers className="size-4" />} Study All
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Add document cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-              <button onClick={() => setModal("document")} className="flex flex-col items-center gap-2 rounded-card border-2 border-dashed border-edge bg-panel/50 p-4 text-ink-faint hover:border-accent hover:text-accent transition">
-                <Upload className="size-6" /><span className="font-display text-xs font-bold">Upload</span>
-              </button>
-              <button onClick={() => setModal("link")} className="flex flex-col items-center gap-2 rounded-card border-2 border-dashed border-edge bg-panel/50 p-4 text-ink-faint hover:border-accent hover:text-accent transition">
-                <Link2 className="size-6" /><span className="font-display text-xs font-bold">Link</span>
-              </button>
-              <button onClick={async () => {
-                if (!repo || !folderId) return;
-                const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
-                await repo.putNote(note); bump(); navigate(`/notes/${note.id}/editor`);
-              }} className="flex flex-col items-center gap-2 rounded-card border-2 border-dashed border-edge bg-panel/50 p-4 text-ink-faint hover:border-accent hover:text-accent transition">
-                <FilePlus2 className="size-6" /><span className="font-display text-xs font-bold">Blank</span>
-              </button>
-            </div>
-
-            {notes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-ink-faint py-12">
-                <FileText className="size-12 mb-3 opacity-40" /><p className="font-display font-bold">Empty folder</p><p className="text-sm mt-1">Add documents above.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {notes.map((n) => (
-                  <button key={n.id} onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex flex-col items-center gap-2 rounded-card border border-edge bg-card p-4 shadow-soft hover:bg-card-hover transition">
-                    <FileText className="size-10 text-ink-dim" />
-                    <span className="font-display text-xs font-bold text-center line-clamp-2">{n.title}</span>
-                    <span className="text-xs text-ink-faint">{relTime(n.lastOpenedAt)}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {activeView === "overview" && (
+          <FolderOverview
+            folder={folder}
+            notes={notes}
+            studying={studying}
+            engine={!!engine}
+            onStudyAll={studyAll}
+            onUpload={() => setModal("document")}
+            onLink={() => setModal("link")}
+            onBlank={async () => {
+              if (!repo || !folderId) return;
+              const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
+              await repo.putNote(note); bump(); navigate(`/notes/${note.id}/editor`);
+            }}
+            onOpenNote={(id) => navigate(`/notes/${id}/editor`)}
+          />
         )}
 
-        {activeView === "progress" && <FolderProgressWithDocs notes={notes} folderName={folder.name} navigate={navigate} onAddDoc={() => setModal("document")} onAddLink={() => setModal("link")} onAddBlank={async () => {
-          if (!repo || !folderId) return;
-          const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
-          await repo.putNote(note); bump(); navigate(`/notes/${note.id}/editor`);
-        }} />}
         {activeView === "chat" && anchorNote && <Assistant note={{ ...anchorNote, sourceText: combinedContent }} variant="hero" />}
         {activeView === "flashcards" && anchorNote && <FlashcardsView note={{ ...anchorNote, sourceText: combinedContent }} />}
         {activeView === "quiz" && anchorNote && <FolderQuizView notes={notes} anchorNote={anchorNote} />}
@@ -278,26 +230,28 @@ export default function FolderView() {
   );
 }
 
-/* Progress with doc sidebar — merged view */
-function FolderProgressWithDocs({ notes, folderName, navigate, onAddDoc, onAddLink, onAddBlank }: {
-  notes: Note[];
-  folderName: string;
-  navigate: (path: string) => void;
-  onAddDoc: () => void;
-  onAddLink: () => void;
-  onAddBlank: () => void;
+/* Combined overview: progress KPIs + doc grid + focus areas */
+function FolderOverview({
+  folder, notes, studying, engine,
+  onStudyAll, onUpload, onLink, onBlank, onOpenNote,
+}: {
+  folder: Folder; notes: Note[]; studying: boolean; engine: boolean;
+  onStudyAll: () => void; onUpload: () => void; onLink: () => void; onBlank: () => void;
+  onOpenNote: (id: string) => void;
 }) {
   const { repo } = useApp();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
 
   useEffect(() => {
     if (!repo || notes.length === 0) return;
-    Promise.all(notes.map((n) => Promise.all([repo.cardsFor(n.id), repo.attemptsFor(n.id)]))).then((results) => {
+    Promise.all(notes.map((n) => Promise.all([repo.cardsFor(n.id), repo.attemptsFor(n.id), repo.questionsFor(n.id)]))).then((results) => {
       const allCards: Flashcard[] = [];
       const allAttempts: QuizAttempt[] = [];
-      for (const [cs, as] of results) { allCards.push(...cs); allAttempts.push(...as); }
-      setCards(allCards); setAttempts(allAttempts);
+      const allQuestions: QuizQuestion[] = [];
+      for (const [cs, as, qs] of results) { allCards.push(...cs); allAttempts.push(...as); allQuestions.push(...qs); }
+      setCards(allCards); setAttempts(allAttempts); setQuestions(allQuestions);
     });
   }, [repo, notes]);
 
@@ -305,87 +259,108 @@ function FolderProgressWithDocs({ notes, folderName, navigate, onAddDoc, onAddLi
   const reviewing = cards.filter((c) => c.state === "review" && c.stability <= 7).length;
   const learning = cards.filter((c) => c.state === "learning").length;
   const newCards = cards.filter((c) => c.state === "new").length;
-  const cardMastery = cards.length > 0 ? Math.round(((learned * 1.0 + reviewing * 0.7 + learning * 0.3) / cards.length) * 100) : null;
+  const masteryPct = cards.length > 0 ? Math.round((learned / cards.length) * 100) : 0;
   const quizAvg = attempts.length > 0 ? Math.round((attempts.filter((a) => a.correct).length / attempts.length) * 100) : null;
-  const mastery = cardMastery ?? quizAvg ?? null;
 
-  const bars = [
-    { l: "Learned", c: learned, cl: "bg-green-500" },
-    { l: "Reviewing", c: reviewing, cl: "bg-accent" },
-    { l: "Learning", c: learning, cl: "bg-yellow-500" },
-    { l: "New", c: newCards, cl: "bg-slate-300" },
-  ];
+  // Weak topic detection
+  const weakTopics = (() => {
+    const map = new Map<string, { correct: number; total: number }>();
+    for (const a of attempts) {
+      const q = questions.find((q) => q.id === a.questionId);
+      const t = q?.topic || "General";
+      const e = map.get(t) || { correct: 0, total: 0 };
+      e.total++; if (a.correct) e.correct++;
+      map.set(t, e);
+    }
+    return Array.from(map.entries())
+      .map(([t, s]) => ({ topic: t, pct: Math.round((s.correct / s.total) * 100), total: s.total }))
+      .filter((s) => s.pct < 70 && s.total >= 2)
+      .sort((a, b) => a.pct - b.pct)
+      .slice(0, 5);
+  })();
 
   return (
-    <div className="flex h-full">
-      {/* Doc sidebar */}
-      <aside className="w-56 shrink-0 border-r border-edge bg-panel overflow-y-auto p-4 flex flex-col gap-1">
-        <p className="text-xs font-semibold text-ink-faint uppercase tracking-wide mb-2">Documents ({notes.length})</p>
-        {notes.map((n) => (
-          <button key={n.id} onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-ink-dim hover:bg-card-hover hover:text-ink transition text-left">
-            <FileText className="size-4 shrink-0" />
-            <span className="truncate">{n.title}</span>
+    <div className="px-10 py-8">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{folder.name}</h1>
+          <p className="mt-1 text-ink-faint">{notes.length} {notes.length === 1 ? "document" : "documents"}</p>
+        </div>
+        {notes.length > 0 && (
+          <button onClick={onStudyAll} disabled={studying || !engine} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-50">
+            {studying ? <Loader2 className="size-4 animate-spin" /> : <Layers className="size-4" />} Study All
           </button>
-        ))}
-        <div className="border-t border-edge mt-2 pt-2 space-y-1">
-          <button onClick={onAddDoc} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><Upload className="size-3.5" /> Upload doc</button>
-          <button onClick={onAddLink} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><Link2 className="size-3.5" /> Add link</button>
-          <button onClick={onAddBlank} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><FilePlus2 className="size-3.5" /> Blank doc</button>
+        )}
+      </div>
+
+      {/* KPI snapshot */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="rounded-card border border-edge bg-card p-4 shadow-soft text-center">
+          <p className="text-2xl font-bold">{cards.length}</p>
+          <p className="text-xs text-ink-faint mt-1">Flashcards</p>
         </div>
-      </aside>
-
-      {/* Progress dashboard */}
-      <div className="flex-1 overflow-y-auto p-8">
-        <h2 className="font-display text-2xl font-bold mb-6">{folderName} · Progress</h2>
-
-        {/* KPI cards */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
-            <Target className="size-5 text-accent" />
-            <span className="font-display text-xl font-bold">{mastery !== null ? `${mastery}%` : "—"}</span>
-            <span className="text-xs text-ink-faint">Mastery</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
-            <Layers className="size-5 text-blue-500" />
-            <span className="font-display text-xl font-bold">{cards.length || "—"}</span>
-            <span className="text-xs text-ink-faint">Cards</span>
-          </div>
-          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
-            <ListChecks className="size-5 text-purple-500" />
-            <span className="font-display text-xl font-bold">{quizAvg !== null ? `${quizAvg}%` : "—"}</span>
-            <span className="text-xs text-ink-faint">Quiz Avg</span>
-          </div>
+        <div className="rounded-card border border-edge bg-card p-4 shadow-soft text-center">
+          <p className="text-2xl font-bold">{attempts.length}</p>
+          <p className="text-xs text-ink-faint mt-1">Quiz Attempts</p>
         </div>
+        <div className="rounded-card border border-edge bg-card p-4 shadow-soft text-center">
+          <p className="text-2xl font-bold text-accent">{masteryPct}%</p>
+          <p className="text-xs text-ink-faint mt-1">Mastery</p>
+        </div>
+        <div className="rounded-card border border-edge bg-card p-4 shadow-soft text-center">
+          <p className="text-2xl font-bold">{quizAvg !== null ? `${quizAvg}%` : "—"}</p>
+          <p className="text-xs text-ink-faint mt-1">Quiz Avg</p>
+        </div>
+      </div>
 
-        {/* Flashcard breakdown */}
+      {/* Flashcard breakdown + Weak topics */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {cards.length > 0 && (
-          <div className="rounded-card border border-edge bg-card p-5 shadow-soft mb-6">
-            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-4"><Layers className="size-4 text-accent" /> Flashcard Breakdown</h3>
-            <div className="space-y-3">
-              {bars.map(({ l, c, cl }) => (
-                <div key={l} className="flex items-center gap-3">
-                  <span className="w-20 text-sm font-semibold text-ink-dim">{l}</span>
-                  <div className="flex-1 h-3 rounded-full bg-panel overflow-hidden"><div className={`h-full rounded-full ${cl}`} style={{ width: `${cards.length ? Math.round((c / cards.length) * 100) : 0}%` }} /></div>
-                  <span className="w-8 text-right text-sm font-bold">{c}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quiz summary */}
-        {quizAvg !== null && (
           <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
-            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-2"><TrendingUp className="size-4 text-accent" /> Quiz Performance</h3>
-            <p className="text-sm text-ink-faint">{attempts.length} attempts across all docs · average {quizAvg}%</p>
+            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-3"><Brain className="size-4 text-accent" /> Card Status</h3>
+            {[{l:"Learned",c:learned,cl:"bg-green-500"},{l:"Reviewing",c:reviewing,cl:"bg-accent"},{l:"Learning",c:learning,cl:"bg-yellow-500"},{l:"New",c:newCards,cl:"bg-slate-300"}].map(({l,c,cl}) => (
+              <div key={l} className="flex items-center gap-2 mb-1.5">
+                <span className="w-16 text-xs font-semibold text-ink-dim">{l}</span>
+                <div className="flex-1 h-1.5 rounded-full bg-panel overflow-hidden"><div className={`h-full rounded-full ${cl}`} style={{width:`${cards.length?Math.round(c/cards.length*100):0}%`}} /></div>
+                <span className="w-6 text-right text-xs font-semibold">{c}</span>
+              </div>
+            ))}
           </div>
         )}
+        {weakTopics.length > 0 && (
+          <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
+            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-3"><Target className="size-4 text-amber-600" /> Focus Areas</h3>
+            {weakTopics.map((s) => (
+              <div key={s.topic} className="flex items-center gap-2 mb-1.5">
+                <span className="w-24 text-xs font-semibold text-ink-dim truncate">{s.topic}</span>
+                <div className="flex-1 h-1.5 rounded-full bg-panel overflow-hidden"><div className="h-full rounded-full bg-amber-500" style={{width:`${s.pct}%`}} /></div>
+                <span className="w-8 text-right text-xs font-semibold text-amber-600">{s.pct}%</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-        {cards.length === 0 && attempts.length === 0 && (
-          <div className="text-center text-ink-faint py-12">
-            <Brain className="size-12 mx-auto mb-3 opacity-30" />
-            <p className="font-display font-bold">No study data yet</p>
-            <p className="text-sm mt-1">Use "Study All" on the Docs tab to generate flashcards and quizzes.</p>
+      {/* Document grid */}
+      <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-display font-bold text-sm">Documents</h3>
+          <div className="flex gap-2">
+            <button onClick={onUpload} className="flex items-center gap-1 rounded-lg border-2 border-dashed border-edge px-2.5 py-1 text-xs font-semibold text-ink-faint hover:border-accent hover:text-accent transition"><Upload className="size-3" /> Upload</button>
+            <button onClick={onLink} className="flex items-center gap-1 rounded-lg border-2 border-dashed border-edge px-2.5 py-1 text-xs font-semibold text-ink-faint hover:border-accent hover:text-accent transition"><Link2 className="size-3" /> Link</button>
+            <button onClick={onBlank} className="flex items-center gap-1 rounded-lg border-2 border-dashed border-edge px-2.5 py-1 text-xs font-semibold text-ink-faint hover:border-accent hover:text-accent transition"><FilePlus2 className="size-3" /> Blank</button>
+          </div>
+        </div>
+        {notes.length === 0 ? (
+          <p className="text-sm text-ink-faint text-center py-4">No documents yet. Add one above.</p>
+        ) : (
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            {notes.map((n) => (
+              <button key={n.id} onClick={() => onOpenNote(n.id)} className="flex flex-col items-center gap-1 rounded-lg border border-edge bg-panel p-2.5 hover:bg-card-hover transition">
+                <FileText className="size-6 text-ink-dim" />
+                <span className="font-display text-2xs font-bold text-center line-clamp-2 leading-tight">{n.title}</span>
+              </button>
+            ))}
           </div>
         )}
       </div>
