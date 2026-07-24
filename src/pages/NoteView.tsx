@@ -170,17 +170,20 @@ export default function NoteView() {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center">
                     <label className="text-xs font-semibold text-ink-dim">MCQ</label>
-                    <input type="number" min={0} max={30} value={testMcq} onChange={(e) => setTestMcq(Math.max(0, Math.min(30, Number(e.target.value))))}
+                    <input type="number" min={0} max={20} value={testMcq}
+                      onChange={(e) => { const v = Math.max(0, Math.min(20, Number(e.target.value))); if (v + testFrq + testEssay <= 20) setTestMcq(v); }}
                       className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
                   </div>
                   <div className="text-center">
                     <label className="text-xs font-semibold text-ink-dim">FRQ</label>
-                    <input type="number" min={0} max={15} value={testFrq} onChange={(e) => setTestFrq(Math.max(0, Math.min(15, Number(e.target.value))))}
+                    <input type="number" min={0} max={10} value={testFrq}
+                      onChange={(e) => { const v = Math.max(0, Math.min(10, Number(e.target.value))); if (testMcq + v + testEssay <= 20) setTestFrq(v); }}
                       className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
                   </div>
                   <div className="text-center">
                     <label className="text-xs font-semibold text-ink-dim">Essay</label>
-                    <input type="number" min={0} max={5} value={testEssay} onChange={(e) => setTestEssay(Math.max(0, Math.min(5, Number(e.target.value))))}
+                    <input type="number" min={0} max={1} value={testEssay}
+                      onChange={(e) => { const v = Math.max(0, Math.min(1, Number(e.target.value))); if (testMcq + testFrq + v <= 20) setTestEssay(v); }}
                       className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
                   </div>
                 </div>
