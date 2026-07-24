@@ -1,5 +1,4 @@
-/* Dashboard — "My Study Spaces" grid with folders and single docs side-by-side.
-   macOS Finder-style: icons in a responsive grid, create bar at top. */
+/* Dashboard — "My Study Spaces" grid with folders and single docs side-by-side. */
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -13,6 +12,7 @@ import {
   Loader2,
   MoreVertical,
   Search,
+  Upload,
 } from "lucide-react";
 import CreateNoteModal, { type NoteSource } from "../components/CreateNoteModal";
 import { useApp } from "../lib/app";
@@ -20,16 +20,6 @@ import type { IngestInput } from "../lib/ingest";
 import { createNoteFromSources } from "../lib/generation/pipeline";
 import { uuid, now } from "../lib/ids";
 import type { Folder, Job, Note } from "../lib/types";
-
-const creationCards: {
-  source: NoteSource | "blank";
-  title: string;
-  icon: typeof FilePlus2;
-}[] = [
-  { source: "blank", title: "Blank doc", icon: FilePlus2 },
-  { source: "document", title: "Upload", icon: FileText },
-  { source: "link", title: "Link", icon: Link2 },
-];
 
 function relTime(ms: number): string {
   const s = Math.floor((Date.now() - ms) / 1000);
@@ -135,25 +125,54 @@ export default function Dashboard() {
         </label>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <button onClick={() => setShowNewFolder(!showNewFolder)} className="flex items-center gap-2 rounded-xl border border-edge bg-card px-4 py-2 text-sm font-semibold shadow-soft hover:bg-card-hover">
-          <FolderPlus className="size-4" /> New Folder
-        </button>
-        {showNewFolder && (
-          <div className="flex items-center gap-2">
+      {/* Create section — clear, prominent cards */}
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {/* New Folder */}
+        {!showNewFolder ? (
+          <button onClick={() => setShowNewFolder(true)} className="flex flex-col items-center gap-3 rounded-card border-2 border-dashed border-edge bg-panel/50 p-5 text-ink-faint hover:border-accent hover:text-accent transition shadow-soft">
+            <FolderPlus className="size-8" />
+            <span className="font-display text-sm font-bold">New Folder</span>
+            <span className="text-xs">Organize your docs</span>
+          </button>
+        ) : (
+          <div className="flex flex-col items-center gap-3 rounded-card border-2 border-accent bg-accent-softer p-5 shadow-soft">
+            <FolderPlus className="size-8 text-accent" />
             <input autoFocus value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") createFolder(); if (e.key === "Escape") setShowNewFolder(false); }}
-              placeholder="Folder name" className="rounded-xl border border-edge bg-panel px-3 py-2 text-sm outline-none" />
-            <button onClick={createFolder} disabled={!newFolderName.trim()} className="rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-50">Create</button>
+              placeholder="Folder name" className="w-full rounded-lg border border-edge bg-card px-3 py-1.5 text-sm text-center outline-none" />
+            <div className="flex gap-2">
+              <button onClick={createFolder} disabled={!newFolderName.trim()} className="rounded-lg bg-accent px-3 py-1 text-xs font-bold text-white hover:bg-accent-hover disabled:opacity-50">Create</button>
+              <button onClick={() => setShowNewFolder(false)} className="rounded-lg bg-panel px-3 py-1 text-xs font-semibold hover:bg-card-hover">Cancel</button>
+            </div>
           </div>
         )}
-        {creationCards.map(({ source, title, icon: Icon }) => (
-          <button key={title} onClick={() => source === "blank" ? createBlank() : setModal(source)} className="flex items-center gap-2 rounded-xl border border-edge bg-card px-4 py-2 text-sm font-semibold shadow-soft hover:bg-card-hover">
-            <Icon className="size-4" /> {title}
-          </button>
-        ))}
-        <button onClick={() => navigate("/canvas")} className="flex items-center gap-2 rounded-xl border border-edge bg-card px-4 py-2 text-sm font-semibold shadow-soft hover:bg-card-hover">
-          <GraduationCap className="size-4" /> Canvas
+
+        {/* Blank document */}
+        <button onClick={createBlank} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
+          <FilePlus2 className="size-8 text-accent" />
+          <span className="font-display text-sm font-bold">Blank Document</span>
+          <span className="text-xs text-ink-faint">Start from scratch</span>
+        </button>
+
+        {/* Upload document */}
+        <button onClick={() => setModal("document")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
+          <Upload className="size-8 text-accent" />
+          <span className="font-display text-sm font-bold">Upload Document</span>
+          <span className="text-xs text-ink-faint">PDF, DOCX, PPT, TXT</span>
+        </button>
+
+        {/* Website link */}
+        <button onClick={() => setModal("link")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
+          <Link2 className="size-8 text-accent" />
+          <span className="font-display text-sm font-bold">Website Link</span>
+          <span className="text-xs text-ink-faint">Import from any URL</span>
+        </button>
+
+        {/* Canvas */}
+        <button onClick={() => navigate("/canvas")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
+          <GraduationCap className="size-8 text-accent" />
+          <span className="font-display text-sm font-bold">Canvas Import</span>
+          <span className="text-xs text-ink-faint">From your LMS</span>
         </button>
       </div>
 
@@ -164,18 +183,19 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Grid of existing items */}
       {(filteredFolders.length === 0 && filteredNotes.length === 0) ? (
         <div className="mt-16 flex flex-col items-center justify-center text-ink-faint">
           <FolderOpen className="size-12 mb-3 opacity-40" />
           <p className="font-display text-lg font-bold">No study spaces yet</p>
-          <p className="text-sm mt-1">Create a folder or add a document to get started.</p>
+          <p className="text-sm mt-1">Create a folder or add a document using the buttons above.</p>
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {filteredFolders.map((f) => {
             const count = notes.filter((n) => n.folderId === f.id).length;
             return (
-              <div key={f.id} className="group relative" onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ type: "folder", id: f.id }); }}>
+              <div key={f.id} className="group relative">
                 <button onClick={() => navigate(`/folder/${f.id}`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover hover:border-accent/30">
                   <FolderOpen className="size-12 text-accent" />
                   <span className="font-display text-sm font-bold text-center line-clamp-2">{f.name}</span>
@@ -188,7 +208,7 @@ export default function Dashboard() {
             );
           })}
           {filteredNotes.map((n) => (
-            <div key={n.id} className="group relative" onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ type: "note", id: n.id }); }}>
+            <div key={n.id} className="group relative">
               <button onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover">
                 <FileText className="size-12 text-ink-dim" />
                 <span className="font-display text-sm font-bold text-center line-clamp-2">{n.title}</span>
@@ -202,7 +222,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Context menu */}
       {ctxMenu && (
         <div className="fixed z-50 rounded-xl border border-edge bg-card p-1.5 shadow-lg" style={{ top: 200, left: "50%", transform: "translateX(-50%)" }} onClick={(e) => e.stopPropagation()}>
           {ctxMenu.type === "folder" && (

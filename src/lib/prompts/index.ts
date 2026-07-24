@@ -286,3 +286,84 @@ export const essayResultSchema = {
     },
   },
 } as const;
+
+/* ---- Practice Test (configurable: MCQ + FRQ + Essay) -------------------- */
+
+export function practiceTestSystem(opts: {
+  mcqCount: number;
+  frqCount: number;
+  essayCount: number;
+  difficulty: string;
+}): string {
+  return [
+    `Create a practice test from the source material at ${opts.difficulty} difficulty.`,
+    `Include exactly:`,
+    opts.mcqCount > 0 ? `- ${opts.mcqCount} multiple-choice questions (each with 4 options, one correct, tagged with topic, with explanation)` : "",
+    opts.frqCount > 0 ? `- ${opts.frqCount} free-response questions (require short paragraph answers, include model answer + 3-5 key points to look for, tagged with topic)` : "",
+    opts.essayCount > 0 ? `- ${opts.essayCount} essay prompts (require multi-paragraph analysis, include a rubric with 3-4 criteria each scored 1-5, and a model thesis statement, tagged with topic)` : "",
+    "Cover the full breadth of the material. Questions should test understanding, not just recall.",
+  ].filter(Boolean).join("\n");
+}
+
+export const practiceTestSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["mcq", "frq", "essay"],
+  properties: {
+    mcq: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["question", "options", "correctIndex", "topic", "explanation"],
+        properties: {
+          question: { type: "string" },
+          options: { type: "array", items: { type: "string" } },
+          correctIndex: { type: "integer" },
+          topic: { type: "string" },
+          explanation: { type: "string" },
+        },
+      },
+    },
+    frq: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["question", "modelAnswer", "keyPoints", "topic", "maxPoints"],
+        properties: {
+          question: { type: "string" },
+          modelAnswer: { type: "string" },
+          keyPoints: { type: "array", items: { type: "string" } },
+          topic: { type: "string" },
+          maxPoints: { type: "integer" },
+        },
+      },
+    },
+    essay: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["prompt", "rubric", "modelThesis", "topic"],
+        properties: {
+          prompt: { type: "string" },
+          rubric: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["name", "maxPoints"],
+              properties: {
+                name: { type: "string" },
+                maxPoints: { type: "integer" },
+              },
+            },
+          },
+          modelThesis: { type: "string" },
+          topic: { type: "string" },
+        },
+      },
+    },
+  },
+} as const;

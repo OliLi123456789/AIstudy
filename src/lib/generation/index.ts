@@ -34,6 +34,8 @@ import {
   titleUser,
   topicsSchema,
   topicsSystem,
+  practiceTestSchema,
+  practiceTestSystem,
 } from "../prompts";
 
 /* Token budgets. Sized so a single request stays well under a low 30k-TPM
@@ -329,6 +331,66 @@ export async function generateMultiDocQuiz(
     tier: "strong",
   });
   return questions.map((q) => ({ ...q, id: uuid(), noteId: notes[0].id }));
+}
+
+/* ---- Practice Test (configurable: MCQ + FRQ + Essay) ------------------- */
+
+export interface PracticeTestOptions {
+  mcqCount?: number;
+  frqCount?: number;
+  essayCount?: number;
+  difficulty?: "basic" | "intermediate" | "exam";
+}
+
+export interface PracticeTestMCQ {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  topic: string;
+  explanation: string;
+}
+
+export interface PracticeTestFRQ {
+  question: string;
+  modelAnswer: string;
+  keyPoints: string[];
+  topic: string;
+  maxPoints: number;
+}
+
+export interface PracticeTestEssay {
+  prompt: string;
+  rubric: { name: string; maxPoints: number }[];
+  modelThesis: string;
+  topic: string;
+}
+
+export interface PracticeTest {
+  mcq: PracticeTestMCQ[];
+  frq: PracticeTestFRQ[];
+  essay: PracticeTestEssay[];
+}
+
+export async function generatePracticeTest(
+  engine: Engine,
+  notes: Note[],
+  opts: PracticeTestOptions = {},
+): Promise<PracticeTest> {
+  if (notes.length === 0) return { mcq: [], frq: [], essay: [] };
+  const content = multiDocContent(notes);
+  const mcqCount = opts.mcqCount ?? 10;
+  const frqCount = opts.frqCount ?? 0;
+  const essayCount = opts.essayCount ?? 0;
+  const difficulty = opts.difficulty ?? "intermediate";
+
+  const result = await engine.structured<PracticeTest>({
+    system: practiceTestSystem({ mcqCount, frqCount, essayCount, difficulty }),
+    messages: [{ role: "user", content }],
+    schema: practiceTestSchema as unknown as Record<string, unknown>,
+    schemaName: "practice_test",
+    tier: "strong",
+  });
+  return result;
 }
 
 /* ---- Essay Grading ------------------------------------------------------ */
