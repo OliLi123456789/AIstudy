@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../lib/app";
 import { contentFor, generateFlashcards } from "../lib/generation";
+import { renderRichInline } from "../lib/markdown";
 import { bucketOf, reviewCard, studyOrder, type Rating } from "../lib/study/fsrs";
 import { EngineError } from "../lib/engine/types";
 import type { Flashcard, Note } from "../lib/types";
@@ -238,9 +239,10 @@ export default function FlashcardsView({ note }: { note: Note }) {
                   <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
                     {flipped ? "Answer" : "Question"}
                   </span>
-                  <p className="font-display text-xl font-semibold text-ink">
-                    {flipped ? current.back : current.front}
-                  </p>
+                  <p
+                    className="font-display text-xl font-semibold text-ink"
+                    dangerouslySetInnerHTML={{ __html: renderRichInline(flipped ? current.back : current.front) }}
+                  />
                   {!flipped && (
                     <p className="text-xs text-ink-faint">Click to reveal answer</p>
                   )}

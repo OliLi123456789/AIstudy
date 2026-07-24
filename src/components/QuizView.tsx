@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../lib/app";
 import { contentFor, generateQuiz } from "../lib/generation";
+import { renderRichInline } from "../lib/markdown";
 import { EngineError } from "../lib/engine/types";
 import { masteryByTopic, masteryColor, type TopicMastery } from "../lib/study/mastery";
 import { now, uuid } from "../lib/ids";
@@ -263,7 +264,7 @@ function QuestionCard({
       <div className="flex items-start justify-between gap-4">
         <p className="font-display text-base font-semibold text-ink">
           <span className="mr-2 text-ink-faint">{index + 1}.</span>
-          {q.question}
+          <span dangerouslySetInnerHTML={{ __html: renderRichInline(q.question) }} />
         </p>
         {isAnswered &&
           (answer.correct ? (
@@ -309,9 +310,8 @@ function QuestionCard({
                 disabled={isAnswered}
                 onClick={() => onAnswer(i)}
                 className={`rounded-xl border px-4 py-2.5 text-left text-sm font-semibold ${cls}`}
-              >
-                {opt}
-              </button>
+                dangerouslySetInnerHTML={{ __html: renderRichInline(opt) }}
+              />
             );
           })}
         </div>
@@ -320,7 +320,7 @@ function QuestionCard({
       {isAnswered && q.explanation && (
         <div className="mt-4 rounded-xl bg-accent-softer p-4 text-sm text-ink-dim">
           <span className="font-display font-bold text-ink">Explanation: </span>
-          {q.explanation}
+          <span dangerouslySetInnerHTML={{ __html: renderRichInline(q.explanation) }} />
         </div>
       )}
     </div>
