@@ -7,6 +7,8 @@ import NoteView from "./pages/NoteView";
 import Onboarding from "./pages/Onboarding";
 import Admin from "./pages/Admin";
 import CanvasBrowse from "./pages/CanvasBrowse";
+import EssayReview from "./pages/EssayReview";
+import FolderView from "./pages/FolderView";
 import { useApp } from "./lib/app";
 
 export default function App() {
@@ -32,9 +34,11 @@ export default function App() {
       <Route path="/admin" element={<Admin />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/essay" element={<EssayReview />} />
         <Route path="/canvas" element={<CanvasBrowse />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
+      <Route path="/folder/:folderId" element={<FolderView />} />
       <Route path="/notes/:id" element={<Navigate to="editor" replace />} />
       <Route path="/notes/:id/:view" element={<NoteView />} />
       <Route path="*" element={<Navigate to="/" replace />} />

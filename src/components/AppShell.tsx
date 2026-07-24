@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import {
   ChevronsLeft,
   ChevronsRight,
+  ClipboardCheck,
   GraduationCap,
   Home,
   Palette,
@@ -12,7 +13,8 @@ import {
 import { toggleTheme } from "../lib/theme";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: Home },
+  { to: "/", label: "My Studies", icon: Home },
+  { to: "/essay", label: "Essay Review", icon: ClipboardCheck },
   { to: "/canvas", label: "Canvas", icon: GraduationCap },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];

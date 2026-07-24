@@ -6,6 +6,7 @@ import {
   Download,
   FileText,
   History,
+  BarChart3,
   Layers,
   ListChecks,
   Loader2,
@@ -20,6 +21,7 @@ import BlockEditor from "../components/BlockEditor";
 import Assistant from "../components/Assistant";
 import FlashcardsView from "../components/FlashcardsView";
 import QuizView from "../components/QuizView";
+import ProgressView from "../components/ProgressView";
 import {
   downloadText,
   exportDocxHtml,
@@ -31,6 +33,7 @@ import type { Block, Note } from "../lib/types";
 
 const railViews = [
   { view: "editor", icon: FileText, label: "Editor" },
+  { view: "progress", icon: BarChart3, label: "Progress" },
   { view: "chat", icon: MessageCircle, label: "Chat" },
   { view: "flashcards", icon: Layers, label: "Flashcards" },
   { view: "quiz", icon: ListChecks, label: "Quiz" },
@@ -115,6 +118,8 @@ export default function NoteView() {
           </div>
         ) : view === "editor" ? (
           <EditorView note={note} onNote={setNote} />
+        ) : view === "progress" ? (
+          <ProgressView note={note} />
         ) : view === "chat" ? (
           <Assistant note={note} variant="hero" />
         ) : view === "flashcards" ? (

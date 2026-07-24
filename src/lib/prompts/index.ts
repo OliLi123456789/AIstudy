@@ -233,3 +233,56 @@ export const podcastSchema = {
     },
   },
 } as const;
+
+/* ---- Essay Grading ------------------------------------------------------ */
+
+export const essaySystem = [
+  "You are an experienced teacher grading a student essay. Be fair, constructive,",
+  "and specific. If a rubric is provided, grade against each criterion exactly.",
+  "If no rubric is provided, evaluate on: Thesis/Argument, Evidence & Analysis,",
+  "Organization & Structure, Clarity & Style, and Grammar & Mechanics.",
+  "For each criterion, give a score, the max score, and 1-2 sentences of specific",
+  "feedback. List 2-4 overall strengths and 2-4 specific improvements. The",
+  "overallScore should be the sum of all criterion scores. Be encouraging but",
+  "honest — point out what needs work without being harsh.",
+].join("\n");
+
+export function essayUser(essay: string, rubric?: string): string {
+  const parts = ["Please grade this essay:"];
+  if (rubric) parts.push(`Rubric:\n${rubric}`);
+  parts.push(`Essay:\n${essay}`);
+  return parts.join("\n\n");
+}
+
+export const essayResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["result"],
+  properties: {
+    result: {
+      type: "object",
+      additionalProperties: false,
+      required: ["overallScore", "maxScore", "criteria", "strengths", "improvements"],
+      properties: {
+        overallScore: { type: "number" },
+        maxScore: { type: "number" },
+        criteria: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["name", "score", "maxScore", "feedback"],
+            properties: {
+              name: { type: "string" },
+              score: { type: "number" },
+              maxScore: { type: "number" },
+              feedback: { type: "string" },
+            },
+          },
+        },
+        strengths: { type: "array", items: { type: "string" } },
+        improvements: { type: "array", items: { type: "string" } },
+      },
+    },
+  },
+} as const;

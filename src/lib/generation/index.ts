@@ -17,6 +17,9 @@ import { newCardState } from "../study/fsrs";
 import { capTokens, chunkByTokens, estimateTokens } from "./chunk";
 import {
   chatSystem,
+  essayResultSchema,
+  essaySystem,
+  essayUser,
   flashcardsSchema,
   flashcardsSystem,
   noteReduceSystem,
@@ -260,4 +263,97 @@ export async function synthesizePodcastAudio(
     parts.push(blob);
   }
   return new Blob(parts, { type: "audio/mpeg" });
+}
+
+/* ---- Multi-doc (folder-level study) ------------------------------------ */
+
+/* Combine multiple notes' content into one study text, capped per note. */
+export function multiDocContent(notes: Note[]): string {
+  return notes
+    .map((n) => `## ${n.title}\n\n${studyContent(n)}`)
+    .join("\n\n---\n\n");
+}
+
+/* Generate flashcards from multiple notes in a folder. Cards include a
+   noteId reference to the first note for storage association. */
+export async function generateMultiDocFlashcards(
+  engine: Engine,
+  notes: Note[],
+): Promise<Flashcard[]> {
+  if (notes.length === 0) return [];
+  const content = multiDocContent(notes);
+  const { topics } = await engine.structured<{ topics: string[] }>({
+    system: topicsSystem,
+    messages: [{ role: "user", content }],
+    schema: topicsSchema as unknown as Record<string, unknown>,
+    schemaName: "topics",
+    tier: "fast",
+  });
+  const { cards } = await engine.structured<{
+    cards: { front: string; back: string; topic: string }[];
+  }>({
+    system: flashcardsSystem(topics.length ? topics : ["General"]),
+    messages: [{ role: "user", content }],
+    schema: flashcardsSchema as unknown as Record<string, unknown>,
+    schemaName: "flashcards",
+    tier: "strong",
+  });
+  return cards.map((c) => ({
+    id: uuid(),
+    noteId: notes[0].id,
+    front: c.front,
+    back: c.back,
+    topic: c.topic || "General",
+    ...newCardState(),
+  }));
+}
+
+/* Generate a quiz from multiple notes in a folder. */
+export async function generateMultiDocQuiz(
+  engine: Engine,
+  notes: Note[],
+  opts: QuizOptions = {},
+): Promise<QuizQuestion[]> {
+  if (notes.length === 0) return [];
+  const count = opts.count ?? 10;
+  const difficulty = opts.difficulty ?? "intermediate";
+  const types = opts.types ?? ["mcq", "true_false", "fill_blank"];
+  const content = multiDocContent(notes);
+  const { questions } = await engine.structured<{
+    questions: Omit<QuizQuestion, "id" | "noteId">[];
+  }>({
+    system: quizSystem({ count, difficulty, types }),
+    messages: [{ role: "user", content }],
+    schema: quizSchema as unknown as Record<string, unknown>,
+    schemaName: "quiz",
+    tier: "strong",
+  });
+  return questions.map((q) => ({ ...q, id: uuid(), noteId: notes[0].id }));
+}
+
+/* ---- Essay Grading ------------------------------------------------------ */
+
+export interface EssayResult {
+  overallScore: number;
+  maxScore: number;
+  criteria: { name: string; score: number; maxScore: number; feedback: string }[];
+  strengths: string[];
+  improvements: string[];
+}
+
+export async function gradeEssay(
+  engine: Engine,
+  essay: string,
+  rubric?: string,
+): Promise<EssayResult> {
+  const { result } = await engine.structured<{ result: EssayResult }>({
+    system: essaySystem,
+    messages: [
+      { role: "user", content: essayUser(essay, rubric) },
+    ],
+    schema: essayResultSchema as unknown as Record<string, unknown>,
+    schemaName: "essay_result",
+    tier: "strong",
+  });
+  return result;
 }

@@ -61,6 +61,12 @@ export class Repo {
     (await this.store.all<Note>(COLLECTIONS.notes)).sort(
       (a, b) => b.lastOpenedAt - a.lastOpenedAt,
     );
+  notesByFolder = async (folderId: string) =>
+    (await this.store.where<Note>(COLLECTIONS.notes, { folderId } as Partial<Note>)).sort(
+      (a, b) => b.lastOpenedAt - a.lastOpenedAt,
+    );
+  orphanNotes = async () =>
+    (await this.store.all<Note>(COLLECTIONS.notes)).filter((n) => !n.folderId);
 
   // folders
   listFolders = () => this.store.all<Folder>(COLLECTIONS.folders);
