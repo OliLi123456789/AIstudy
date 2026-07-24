@@ -17,6 +17,7 @@ import {
   ListChecks,
   Loader2,
   MessageCircle,
+  Target,
   TrendingUp,
   Upload,
   X,
@@ -229,7 +230,11 @@ export default function FolderView() {
           </div>
         )}
 
-        {activeView === "progress" && <FolderProgress notes={notes} />}
+        {activeView === "progress" && <FolderProgressWithDocs notes={notes} folderName={folder.name} navigate={navigate} onAddDoc={() => setModal("document")} onAddLink={() => setModal("link")} onAddBlank={async () => {
+          if (!repo || !folderId) return;
+          const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
+          await repo.putNote(note); bump(); navigate(`/notes/${note.id}/editor`);
+        }} />}
         {activeView === "chat" && anchorNote && <Assistant note={{ ...anchorNote, sourceText: combinedContent }} variant="hero" />}
         {activeView === "flashcards" && anchorNote && <FlashcardsView note={{ ...anchorNote, sourceText: combinedContent }} />}
         {activeView === "quiz" && anchorNote && <FolderQuizView notes={notes} anchorNote={anchorNote} />}
@@ -273,8 +278,15 @@ export default function FolderView() {
   );
 }
 
-/* Combined progress across all notes in folder */
-function FolderProgress({ notes }: { notes: Note[] }) {
+/* Progress with doc sidebar — merged view */
+function FolderProgressWithDocs({ notes, folderName, navigate, onAddDoc, onAddLink, onAddBlank }: {
+  notes: Note[];
+  folderName: string;
+  navigate: (path: string) => void;
+  onAddDoc: () => void;
+  onAddLink: () => void;
+  onAddBlank: () => void;
+}) {
   const { repo } = useApp();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
@@ -293,34 +305,90 @@ function FolderProgress({ notes }: { notes: Note[] }) {
   const reviewing = cards.filter((c) => c.state === "review" && c.stability <= 7).length;
   const learning = cards.filter((c) => c.state === "learning").length;
   const newCards = cards.filter((c) => c.state === "new").length;
+  const cardMastery = cards.length > 0 ? Math.round(((learned * 1.0 + reviewing * 0.7 + learning * 0.3) / cards.length) * 100) : null;
   const quizAvg = attempts.length > 0 ? Math.round((attempts.filter((a) => a.correct).length / attempts.length) * 100) : null;
+  const mastery = cardMastery ?? quizAvg ?? null;
+
+  const bars = [
+    { l: "Learned", c: learned, cl: "bg-green-500" },
+    { l: "Reviewing", c: reviewing, cl: "bg-accent" },
+    { l: "Learning", c: learning, cl: "bg-yellow-500" },
+    { l: "New", c: newCards, cl: "bg-slate-300" },
+  ];
 
   return (
-    <div className="flex flex-col gap-6 p-8 max-w-2xl mx-auto">
-      <h2 className="font-display text-2xl font-bold">Folder Progress</h2>
-      {cards.length > 0 && (
-        <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
-          <h3 className="flex items-center gap-2 font-display font-bold"><Brain className="size-4 text-accent" /> Flashcards ({cards.length} total)</h3>
-          <div className="mt-3 space-y-2">
-            {[{l:"Learned",c:learned,cl:"bg-green-500"},{l:"Reviewing",c:reviewing,cl:"bg-accent"},{l:"Learning",c:learning,cl:"bg-yellow-500"},{l:"New",c:newCards,cl:"bg-ink-faint"}].map(({l,c,cl}) => (
-              <div key={l} className="flex items-center gap-3">
-                <span className="w-20 text-sm font-semibold text-ink-dim">{l}</span>
-                <div className="flex-1 h-2 rounded-full bg-panel overflow-hidden"><div className={`h-full rounded-full ${cl}`} style={{width:`${cards.length?Math.round(c/cards.length*100):0}%`}} /></div>
-                <span className="w-8 text-right text-sm font-semibold">{c}</span>
-              </div>
-            ))}
+    <div className="flex h-full">
+      {/* Doc sidebar */}
+      <aside className="w-56 shrink-0 border-r border-edge bg-panel overflow-y-auto p-4 flex flex-col gap-1">
+        <p className="text-xs font-semibold text-ink-faint uppercase tracking-wide mb-2">Documents ({notes.length})</p>
+        {notes.map((n) => (
+          <button key={n.id} onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-ink-dim hover:bg-card-hover hover:text-ink transition text-left">
+            <FileText className="size-4 shrink-0" />
+            <span className="truncate">{n.title}</span>
+          </button>
+        ))}
+        <div className="border-t border-edge mt-2 pt-2 space-y-1">
+          <button onClick={onAddDoc} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><Upload className="size-3.5" /> Upload doc</button>
+          <button onClick={onAddLink} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><Link2 className="size-3.5" /> Add link</button>
+          <button onClick={onAddBlank} className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-ink-faint hover:text-accent transition w-full"><FilePlus2 className="size-3.5" /> Blank doc</button>
+        </div>
+      </aside>
+
+      {/* Progress dashboard */}
+      <div className="flex-1 overflow-y-auto p-8">
+        <h2 className="font-display text-2xl font-bold mb-6">{folderName} · Progress</h2>
+
+        {/* KPI cards */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
+            <Target className="size-5 text-accent" />
+            <span className="font-display text-xl font-bold">{mastery !== null ? `${mastery}%` : "—"}</span>
+            <span className="text-xs text-ink-faint">Mastery</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
+            <Layers className="size-5 text-blue-500" />
+            <span className="font-display text-xl font-bold">{cards.length || "—"}</span>
+            <span className="text-xs text-ink-faint">Cards</span>
+          </div>
+          <div className="flex flex-col items-center gap-1 rounded-card border border-edge bg-card p-4 shadow-soft">
+            <ListChecks className="size-5 text-purple-500" />
+            <span className="font-display text-xl font-bold">{quizAvg !== null ? `${quizAvg}%` : "—"}</span>
+            <span className="text-xs text-ink-faint">Quiz Avg</span>
           </div>
         </div>
-      )}
-      {quizAvg !== null && (
-        <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
-          <h3 className="flex items-center gap-2 font-display font-bold"><TrendingUp className="size-4 text-accent" /> Quiz</h3>
-          <p className="text-sm text-ink-faint mt-1">{attempts.length} attempts · avg {quizAvg}%</p>
-        </div>
-      )}
-      {cards.length === 0 && attempts.length === 0 && (
-        <div className="text-center text-ink-faint py-8"><Brain className="size-10 mx-auto mb-3 opacity-30" /><p className="font-display font-bold">No data yet</p><p className="text-sm mt-1">Use "Study All" to generate flashcards & quiz.</p></div>
-      )}
+
+        {/* Flashcard breakdown */}
+        {cards.length > 0 && (
+          <div className="rounded-card border border-edge bg-card p-5 shadow-soft mb-6">
+            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-4"><Layers className="size-4 text-accent" /> Flashcard Breakdown</h3>
+            <div className="space-y-3">
+              {bars.map(({ l, c, cl }) => (
+                <div key={l} className="flex items-center gap-3">
+                  <span className="w-20 text-sm font-semibold text-ink-dim">{l}</span>
+                  <div className="flex-1 h-3 rounded-full bg-panel overflow-hidden"><div className={`h-full rounded-full ${cl}`} style={{ width: `${cards.length ? Math.round((c / cards.length) * 100) : 0}%` }} /></div>
+                  <span className="w-8 text-right text-sm font-bold">{c}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quiz summary */}
+        {quizAvg !== null && (
+          <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
+            <h3 className="flex items-center gap-2 font-display font-bold text-sm mb-2"><TrendingUp className="size-4 text-accent" /> Quiz Performance</h3>
+            <p className="text-sm text-ink-faint">{attempts.length} attempts across all docs · average {quizAvg}%</p>
+          </div>
+        )}
+
+        {cards.length === 0 && attempts.length === 0 && (
+          <div className="text-center text-ink-faint py-12">
+            <Brain className="size-12 mx-auto mb-3 opacity-30" />
+            <p className="font-display font-bold">No study data yet</p>
+            <p className="text-sm mt-1">Use "Study All" on the Docs tab to generate flashcards and quizzes.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
