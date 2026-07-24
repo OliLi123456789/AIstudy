@@ -1,6 +1,6 @@
 /* Dashboard — "My Study Spaces" grid with folders and single docs side-by-side. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FilePlus2,
@@ -11,7 +11,6 @@ import {
   Link2,
   Loader2,
   MoreVertical,
-  Search,
   Upload,
 } from "lucide-react";
 import CreateNoteModal, { type NoteSource } from "../components/CreateNoteModal";
@@ -41,28 +40,15 @@ export default function Dashboard() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [showNewFolder, setShowNewFolder] = useState(false);
-  const [query, setQuery] = useState("");
   const [job, setJob] = useState<Job | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ type: "folder" | "note"; id: string } | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!repo) return;
     repo.orphanNotes().then(setNotes);
     repo.listFolders().then(setFolders);
   }, [repo, version]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   async function createBlank() {
     if (!repo) return;
@@ -109,25 +95,14 @@ export default function Dashboard() {
     setCtxMenu(null); bump();
   }
 
-  const filteredFolders = folders.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()));
-  const filteredNotes = notes.filter((n) => n.title.toLowerCase().includes(query.toLowerCase()));
-
   return (
     <div className="px-10 py-8" onClick={() => setCtxMenu(null)}>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">My Study Spaces</h1>
-          <p className="mt-1 text-lg text-ink-faint">{folders.length + notes.length} {folders.length + notes.length === 1 ? "item" : "items"}</p>
-        </div>
-        <label className="flex w-72 items-center gap-2 rounded-xl border border-edge bg-card px-3 py-2 text-ink-faint shadow-soft">
-          <Search className="size-4" />
-          <input ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search (⌘K)" className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint" />
-        </label>
+      <div>
+        <h1 className="text-4xl font-bold tracking-tight">My Study Spaces</h1>
+        <p className="mt-1 text-lg text-ink-faint">{folders.length + notes.length} {folders.length + notes.length === 1 ? "item" : "items"}</p>
       </div>
 
-      {/* Create section — clear, prominent cards */}
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {/* New Folder */}
         {!showNewFolder ? (
           <button onClick={() => setShowNewFolder(true)} className="flex flex-col items-center gap-3 rounded-card border-2 border-dashed border-edge bg-panel/50 p-5 text-ink-faint hover:border-accent hover:text-accent transition shadow-soft">
             <FolderPlus className="size-8" />
@@ -146,29 +121,21 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
-        {/* Blank document */}
         <button onClick={createBlank} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
           <FilePlus2 className="size-8 text-accent" />
           <span className="font-display text-sm font-bold">Blank Document</span>
           <span className="text-xs text-ink-faint">Start from scratch</span>
         </button>
-
-        {/* Upload document */}
         <button onClick={() => setModal("document")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
           <Upload className="size-8 text-accent" />
           <span className="font-display text-sm font-bold">Upload Document</span>
           <span className="text-xs text-ink-faint">PDF, DOCX, PPT, TXT</span>
         </button>
-
-        {/* Website link */}
         <button onClick={() => setModal("link")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
           <Link2 className="size-8 text-accent" />
           <span className="font-display text-sm font-bold">Website Link</span>
           <span className="text-xs text-ink-faint">Import from any URL</span>
         </button>
-
-        {/* Canvas */}
         <button onClick={() => navigate("/canvas")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
           <GraduationCap className="size-8 text-accent" />
           <span className="font-display text-sm font-bold">Canvas Import</span>
@@ -183,8 +150,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Grid of existing items */}
-      {(filteredFolders.length === 0 && filteredNotes.length === 0) ? (
+      {(folders.length === 0 && notes.length === 0) ? (
         <div className="mt-16 flex flex-col items-center justify-center text-ink-faint">
           <FolderOpen className="size-12 mb-3 opacity-40" />
           <p className="font-display text-lg font-bold">No study spaces yet</p>
@@ -192,7 +158,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {filteredFolders.map((f) => {
+          {folders.map((f) => {
             const count = notes.filter((n) => n.folderId === f.id).length;
             return (
               <div key={f.id} className="group relative">
@@ -207,7 +173,7 @@ export default function Dashboard() {
               </div>
             );
           })}
-          {filteredNotes.map((n) => (
+          {notes.map((n) => (
             <div key={n.id} className="group relative">
               <button onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover">
                 <FileText className="size-12 text-ink-dim" />

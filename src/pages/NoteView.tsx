@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   Download,
   FileText,
   History,
@@ -14,6 +15,7 @@ import {
   MessageCircle,
   MoreVertical,
   Palette,
+  X,
 } from "lucide-react";
 import { toggleTheme } from "../lib/theme";
 import { useApp } from "../lib/app";
@@ -22,6 +24,7 @@ import Assistant from "../components/Assistant";
 import FlashcardsView from "../components/FlashcardsView";
 import QuizView from "../components/QuizView";
 import ProgressView from "../components/ProgressView";
+import { generatePracticeTest } from "../lib/generation/index";
 import {
   downloadText,
   exportDocxHtml,
@@ -42,9 +45,17 @@ const railViews = [
 export default function NoteView() {
   const { id, view = "editor" } = useParams();
   const navigate = useNavigate();
-  const { repo } = useApp();
+  const { repo, engine } = useApp();
   const [note, setNote] = useState<Note | null>(null);
   const [missing, setMissing] = useState(false);
+
+  // Practice test config
+  const [showTestConfig, setShowTestConfig] = useState(false);
+  const [testMcq, setTestMcq] = useState(10);
+  const [testFrq, setTestFrq] = useState(3);
+  const [testEssay, setTestEssay] = useState(1);
+  const [testDifficulty, setTestDifficulty] = useState<"basic" | "intermediate" | "exam">("intermediate");
+  const [testGenerating, setTestGenerating] = useState(false);
 
   useEffect(() => {
     if (!repo || !id) return;
@@ -96,6 +107,13 @@ export default function NoteView() {
             </NavLink>
           ))}
         </nav>
+        <div className="mt-4 flex flex-col items-center gap-2 border-t border-edge pt-4">
+          {note && (
+            <button onClick={() => setShowTestConfig(true)} className="rounded-xl p-2.5 text-ink-dim hover:bg-accent-softer hover:text-accent transition" title="Practice Test">
+              <ClipboardList className="size-5" />
+            </button>
+          )}
+        </div>
         <div className="mt-auto flex flex-col items-center gap-3">
           <button
             onClick={() => toggleTheme()}
@@ -127,6 +145,71 @@ export default function NoteView() {
         ) : view === "quiz" ? (
           <QuizView note={note} />
         ) : null}
+
+        {/* Practice Test modal */}
+        {showTestConfig && note && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowTestConfig(false)}>
+            <div className="w-full max-w-md rounded-card border border-edge bg-card p-6 shadow-lg" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="flex items-center gap-2 font-display text-xl font-bold"><ClipboardList className="size-5 text-accent" /> Practice Test</h2>
+                <button onClick={() => setShowTestConfig(false)} className="rounded-lg p-1 text-ink-faint hover:bg-panel"><X className="size-4" /></button>
+              </div>
+              <p className="text-sm text-ink-faint mb-4">Configure a test from <strong>{note.title}</strong>.</p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-semibold text-ink-dim">Difficulty</label>
+                  <div className="mt-1 flex rounded-full border border-edge bg-panel p-1">
+                    {(["basic", "intermediate", "exam"] as const).map((d) => (
+                      <button key={d} onClick={() => setTestDifficulty(d)} className={`flex-1 rounded-full py-1.5 text-xs font-semibold ${testDifficulty === d ? "bg-accent text-white" : "text-ink-faint hover:text-ink"}`}>
+                        {d === "basic" ? "Basic" : d === "intermediate" ? "Medium" : "Exam"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <label className="text-xs font-semibold text-ink-dim">MCQ</label>
+                    <input type="number" min={0} max={30} value={testMcq} onChange={(e) => setTestMcq(Math.max(0, Math.min(30, Number(e.target.value))))}
+                      className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
+                  </div>
+                  <div className="text-center">
+                    <label className="text-xs font-semibold text-ink-dim">FRQ</label>
+                    <input type="number" min={0} max={15} value={testFrq} onChange={(e) => setTestFrq(Math.max(0, Math.min(15, Number(e.target.value))))}
+                      className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
+                  </div>
+                  <div className="text-center">
+                    <label className="text-xs font-semibold text-ink-dim">Essay</label>
+                    <input type="number" min={0} max={5} value={testEssay} onChange={(e) => setTestEssay(Math.max(0, Math.min(5, Number(e.target.value))))}
+                      className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
+                  </div>
+                </div>
+                <p className="text-xs text-ink-faint text-center">Total: {testMcq + testFrq + testEssay} questions · ~$0.01</p>
+                <button onClick={async () => {
+                  if (!repo || !engine || testMcq + testFrq + testEssay === 0) return;
+                  setTestGenerating(true);
+                  try {
+                    const test = await generatePracticeTest(engine, [note],
+                      { mcqCount: testMcq, frqCount: testFrq, essayCount: testEssay, difficulty: testDifficulty },
+                    );
+                    const mcqQuestions = test.mcq.map((q) => ({
+                      id: crypto.randomUUID(), noteId: note.id,
+                      type: "mcq" as const, topic: q.topic, difficulty: testDifficulty,
+                      question: q.question, options: q.options, correctIndex: q.correctIndex, explanation: q.explanation,
+                    }));
+                    if (mcqQuestions.length > 0) await repo.putQuestions(mcqQuestions);
+                    setShowTestConfig(false);
+                    navigate(`/notes/${note.id}/quiz`);
+                  } catch { /* silently fail */ }
+                  finally { setTestGenerating(false); }
+                }} disabled={testMcq + testFrq + testEssay === 0 || testGenerating}
+                  className="w-full rounded-xl bg-accent py-3 font-display font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition">
+                  {testGenerating ? <span className="flex items-center justify-center gap-2"><Loader2 className="size-4 animate-spin" /> Generating…</span> : "Generate Test"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
