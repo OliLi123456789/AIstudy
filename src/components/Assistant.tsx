@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Paperclip, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowUp, Home, Paperclip, X } from "lucide-react";
 import { useApp } from "../lib/app";
 import { chatAnswer } from "../lib/generation";
 import { ingest } from "../lib/ingest";
 import { renderMarkdown } from "../lib/markdown";
 import { uuid, now } from "../lib/ids";
 import type { ChatTurn, Note } from "../lib/types";
+
+const MAX_CHAT_MESSAGES = 5;
 
 interface Attachment {
   name: string;
@@ -38,11 +41,15 @@ export default function Assistant({
   variant: "hero" | "panel";
 }) {
   const { repo, engine } = useApp();
+  const navigate = useNavigate();
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [streaming, setStreaming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const userMessages = turns.filter((t) => t.role === "user").length;
+  const sessionFull = userMessages >= MAX_CHAT_MESSAGES;
 
   useEffect(() => {
     repo?.chatFor(note.id).then(setTurns);
@@ -53,7 +60,7 @@ export default function Assistant({
   }, [turns, streaming]);
 
   async function send(question: string, attachments: Attachment[] = []) {
-    if (!question.trim() || busy) return;
+    if (!question.trim() || busy || sessionFull) return;
     setErr(null);
     if (!engine) {
       setErr("Set up your engine in Settings first (pick Local or add a key).");
@@ -111,7 +118,7 @@ export default function Assistant({
       {variant === "hero" && !hasConversation ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
           <div className="text-center">
-            <h1 className="font-display text-5xl font-bold">Hey, I'm Nitro</h1>
+            <h1 className="font-display text-5xl font-bold">Hey, I'm AIstudy</h1>
             <p className="mt-3 text-lg text-ink-dim">
               Ask me anything about the source material.
             </p>
@@ -123,7 +130,7 @@ export default function Assistant({
       ) : variant === "panel" && !hasConversation ? (
         <>
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-            <h2 className="font-display text-3xl font-bold">Hey, I'm Nitro</h2>
+            <h2 className="font-display text-3xl font-bold">Hey, I'm AIstudy</h2>
             <p className="text-ink-dim">
               I can work with you on your doc and answer any questions!
             </p>
@@ -160,7 +167,24 @@ export default function Assistant({
           </div>
           <div className={variant === "hero" ? "mx-auto w-full max-w-2xl px-8 pb-6" : "p-4"}>
             {err && <p className="mb-2 text-xs font-semibold text-danger-ink">{err}</p>}
-            <ChatInput onSend={send} busy={busy} />
+            {sessionFull ? (
+              <div className="rounded-card border border-edge bg-card p-6 text-center shadow-soft">
+                <Home className="size-6 text-accent mx-auto mb-2" />
+                <p className="font-display font-bold text-ink">Session complete!</p>
+                <p className="text-sm text-ink-faint mt-1">
+                  You've reached {MAX_CHAT_MESSAGES} messages in this chat. Head back to
+                  start a fresh session.
+                </p>
+                <button
+                  onClick={() => navigate("/")}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-2.5 text-sm font-bold text-white hover:bg-accent-hover transition"
+                >
+                  <Home className="size-4" /> My Studies
+                </button>
+              </div>
+            ) : (
+              <ChatInput onSend={send} busy={busy} />
+            )}
           </div>
         </>
       )}
