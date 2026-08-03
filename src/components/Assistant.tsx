@@ -170,11 +170,11 @@ export default function Assistant({
             <ChatInput onSend={send} busy={busy} />
           </div>
           {/* Token counter (dev) */}
-          <div className="absolute bottom-4 right-4 z-10 selectable rounded-lg bg-panel/85 px-2.5 py-1 text-2xs text-ink-faint backdrop-blur-sm shadow-soft">
-            <span title="Input tokens">↓{tokenStats.input.toLocaleString()}</span>
-            <span className="mx-1 opacity-40">·</span>
-            <span title="Output tokens">↑{tokenStats.output.toLocaleString()}</span>
-            <span className="mx-1 opacity-40">·</span>
+          <div className="absolute bottom-4 right-4 z-20 selectable rounded-lg bg-card/90 px-3 py-1.5 text-[11px] font-mono text-ink-dim backdrop-blur-sm shadow-md border border-edge">
+            <span title="Input tokens">in: {tokenStats.input.toLocaleString()}</span>
+            <span className="mx-2 opacity-30">|</span>
+            <span title="Output tokens">out: {tokenStats.output.toLocaleString()}</span>
+            <span className="mx-2 opacity-30">|</span>
             <span title="Estimated cost">${((tokenStats.input * 0.27 + tokenStats.output * 1.10) / 1_000_000).toFixed(4)}</span>
           </div>
         </>
