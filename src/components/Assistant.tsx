@@ -170,7 +170,7 @@ export default function Assistant({
             <ChatInput onSend={send} busy={busy} />
           </div>
           {/* Token counter (dev) */}
-          <div className="absolute bottom-4 right-4 z-10 rounded-lg bg-panel/85 px-2.5 py-1 text-2xs text-ink-faint backdrop-blur-sm shadow-soft">
+          <div className="absolute bottom-4 right-4 z-10 selectable rounded-lg bg-panel/85 px-2.5 py-1 text-2xs text-ink-faint backdrop-blur-sm shadow-soft">
             <span title="Input tokens">↓{tokenStats.input.toLocaleString()}</span>
             <span className="mx-1 opacity-40">·</span>
             <span title="Output tokens">↑{tokenStats.output.toLocaleString()}</span>
