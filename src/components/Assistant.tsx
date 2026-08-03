@@ -4,6 +4,7 @@ import { useApp } from "../lib/app";
 import { chatAnswer } from "../lib/generation";
 import { ingest } from "../lib/ingest";
 import { renderMarkdown } from "../lib/markdown";
+import { estimateTokens } from "../lib/generation/chunk";
 import { uuid, now } from "../lib/ids";
 import type { ChatTurn, Note } from "../lib/types";
 
@@ -43,6 +44,7 @@ export default function Assistant({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [tokenStats, setTokenStats] = useState({ input: 0, output: 0 });
 
   useEffect(() => {
     repo?.chatFor(note.id).then(setTurns);
@@ -87,6 +89,11 @@ export default function Assistant({
         acc += d;
         setStreaming(acc);
       });
+      // Track estimated tokens
+      setTokenStats((s) => ({
+        input: s.input + estimateTokens(modelQuestion),
+        output: s.output + estimateTokens(full || acc),
+      }));
       const asst: ChatTurn = {
         id: uuid(),
         noteId: note.id,
@@ -107,7 +114,7 @@ export default function Assistant({
   const hasConversation = turns.length > 0 || streaming !== null;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative">
       {variant === "hero" && !hasConversation ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8">
           <div className="text-center">
@@ -161,6 +168,14 @@ export default function Assistant({
           <div className={variant === "hero" ? "mx-auto w-full max-w-2xl px-8 pb-6" : "p-4"}>
             {err && <p className="mb-2 text-xs font-semibold text-danger-ink">{err}</p>}
             <ChatInput onSend={send} busy={busy} />
+          </div>
+          {/* Token counter (dev) */}
+          <div className="absolute bottom-4 right-4 z-10 rounded-lg bg-panel/85 px-2.5 py-1 text-2xs text-ink-faint backdrop-blur-sm shadow-soft">
+            <span title="Input tokens">↓{tokenStats.input.toLocaleString()}</span>
+            <span className="mx-1 opacity-40">·</span>
+            <span title="Output tokens">↑{tokenStats.output.toLocaleString()}</span>
+            <span className="mx-1 opacity-40">·</span>
+            <span title="Estimated cost">${((tokenStats.input * 0.27 + tokenStats.output * 1.10) / 1_000_000).toFixed(4)}</span>
           </div>
         </>
       )}
