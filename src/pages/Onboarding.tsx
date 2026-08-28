@@ -51,6 +51,7 @@ export default function Onboarding() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
 
@@ -85,17 +86,24 @@ export default function Onboarding() {
     setBusy(true);
     setMsg("");
     try {
-      const { data, error } =
-        mode === "signup"
-          ? await sb.auth.signUp({ email, password })
-          : await sb.auth.signInWithPassword({ email, password });
+      if (mode === "signup") {
+        const { error } = await sb.auth.signUp({ email, password });
+        if (error) {
+          setMsg(error.message);
+        } else {
+          // Always route new accounts through email confirmation messaging.
+          setNotice("Check your email to confirm your account, then sign in.");
+          setPassword("");
+          setMode("signin");
+        }
+        return;
+      }
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) {
         setMsg(error.message);
       } else if (data.session) {
+        setNotice(null);
         await finish(true);
-      } else {
-        setMsg("Account created — check your email to confirm, then sign in.");
-        setMode("signin");
       }
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Authentication failed.");
@@ -106,7 +114,7 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-full overflow-y-auto bg-bg">
-      <div className="mx-auto flex min-h-full max-w-5xl flex-col px-6 py-10">
+      <div className="mx-auto flex min-h-full max-w-5xl flex-col px-6 py-8">
         {/* Header */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -119,31 +127,36 @@ export default function Onboarding() {
         </header>
 
         {/* Hero */}
-        <section className="mt-16 text-center">
-          <h1 className="font-display text-5xl font-bold leading-tight tracking-tight">
+        <section className="mt-8 text-center">
+          <h1 className="font-display text-4xl font-bold leading-tight tracking-tight md:text-5xl">
             AI study tools.
             <br />
             <span className="text-accent">Completely free. Unlimited.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-ink-dim">
+          <p className="mx-auto mt-4 max-w-xl text-base text-ink-dim md:text-lg">
             Turn any lecture, PDF, or document into notes, flashcards, quizzes,
             and games — powered by AI. No paywall, no limits, no credit card.
           </p>
         </section>
 
         {/* Feature grid */}
-        <section className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-card border border-edge bg-card p-5 shadow-soft">
-              <Icon className="size-6 text-accent" />
-              <h3 className="mt-3 font-display font-bold">{title}</h3>
+            <div key={title} className="rounded-card border border-edge bg-card p-4 shadow-soft">
+              <Icon className="size-5 text-accent" />
+              <h3 className="mt-2 font-display font-bold">{title}</h3>
               <p className="mt-1 text-sm text-ink-faint">{text}</p>
             </div>
           ))}
         </section>
 
         {/* Auth panel */}
-        <section className="mx-auto mt-14 w-full max-w-md">
+        <section className="mx-auto mt-8 w-full max-w-md">
+          {notice && (
+            <div className="mb-4 rounded-xl border border-accent/20 bg-accent-softer px-4 py-3 text-center text-sm font-semibold text-accent">
+              {notice}
+            </div>
+          )}
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
             {checking ? (
               <div className="flex items-center justify-center gap-2 py-6 text-ink-faint">

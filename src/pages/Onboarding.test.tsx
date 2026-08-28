@@ -4,7 +4,7 @@
  * Supabase is configured, and the local-only fallback always exists. */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Onboarding from "./Onboarding";
 
@@ -18,7 +18,7 @@ vi.mock("../lib/supabase", () => ({
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
-      signUp: vi.fn(),
+      signUp: vi.fn(async () => ({ error: null })),
       signInWithPassword: vi.fn(),
       signOut: vi.fn(),
     },
@@ -66,5 +66,20 @@ describe("Onboarding landing page", () => {
     renderLanding();
     expect(await screen.findByText("Continue without an account")).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
+  });
+
+  it("shows a check-your-email notice after signing up", async () => {
+    supabaseMock.configured = true;
+    renderLanding();
+    fireEvent.change(await screen.findByPlaceholderText("Email"), {
+      target: { value: "student@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByText("Create free account"));
+    expect(
+      await screen.findByText("Check your email to confirm your account, then sign in."),
+    ).toBeTruthy();
   });
 });
