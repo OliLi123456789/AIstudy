@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
   CalendarDays,
@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   GraduationCap,
   Home,
+  LogOut,
   Palette,
   PenLine,
   Settings as SettingsIcon,
@@ -14,6 +15,8 @@ import {
 import { toggleTheme } from "../lib/theme";
 import { useApp } from "../lib/app";
 import { CANVAS_ENABLED } from "../lib/features";
+import { getSupabase } from "../lib/supabase";
+import { getEnginePrefs } from "../lib/prefs";
 
 const navItems = [
   { to: "/", label: "My Studies", icon: Home },
@@ -25,7 +28,27 @@ const navItems = [
 
 export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
-  const { prefs } = useApp();
+  const { prefs, savePrefs } = useApp();
+  const [signedIn, setSignedIn] = useState(false);
+
+  useEffect(() => {
+    const sb = getSupabase();
+    if (!sb) return;
+    sb.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(Boolean(session));
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function logOut() {
+    const sb = getSupabase();
+    if (!sb) return;
+    await sb.auth.signOut();
+    // Reset onboarding so the app routes back to the landing page.
+    savePrefs({ ...getEnginePrefs(), onboarded: false });
+  }
+
   const canvasConnected = CANVAS_ENABLED && !!(prefs.canvasToken && prefs.canvasUrl);
   const visibleItems = navItems.filter((i) => !i.canvasOnly || canvasConnected);
 
@@ -88,6 +111,16 @@ export default function AppShell() {
             </div>
             {!collapsed && <span className="truncate text-sm font-semibold">You</span>}
           </div>
+          {signedIn && (
+            <button
+              onClick={logOut}
+              title="Log out"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-dim hover:bg-card-hover hover:text-ink"
+            >
+              <LogOut className="size-4.5 shrink-0" />
+              {!collapsed && "Log out"}
+            </button>
+          )}
         </div>
       </aside>
 
