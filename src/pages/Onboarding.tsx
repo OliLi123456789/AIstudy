@@ -265,7 +265,7 @@ export default function Onboarding() {
                 )}
                 <p className="mt-3 text-center text-xs text-ink-faint">
                   {isSupabaseConfigured()
-                    ? "A free account keeps your notes synced across devices."
+                    ? "Your notes sync across devices."
                     : "Without an account, your notes stay on this device only."}
                 </p>
               </>

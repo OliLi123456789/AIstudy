@@ -317,7 +317,7 @@ export class OpenAIEngine implements Engine {
       throw toNetworkError(err);
     }
     if (res.status === 401) throw new EngineError(`Invalid ${label} API key.`, "auth");
-    if (!res.ok) throw await mapError(res);
+    if (!res.ok) throw await mapError(res, label);
   }
 
   private resolveModel(tier?: "fast" | "strong"): string {
@@ -330,6 +330,11 @@ export class OpenAIEngine implements Engine {
       "Content-Type": "application/json",
       Authorization: `Bearer ${this.apiKey}`,
     };
+  }
+
+  private get errorLabel(): string {
+    if (this.proxyMode) return "AI service";
+    return this.provider === "deepseek" ? "DeepSeek" : "OpenAI";
   }
 
   /* Shared POST helper: sends JSON, handles network failure + non-2xx mapping.
@@ -352,11 +357,11 @@ export class OpenAIEngine implements Engine {
       try {
         this.apiKey = await getClientAuthToken();
       } catch {
-        throw await mapError(res);
+        throw await mapError(res, this.errorLabel);
       }
       return this.post(path, body, signal, false);
     }
-    if (!res.ok) throw await mapError(res);
+    if (!res.ok) throw await mapError(res, this.errorLabel);
     return res;
   }
 }
@@ -378,8 +383,8 @@ function toNetworkError(err: unknown): EngineError {
   return new EngineError(message, "network");
 }
 
-async function mapError(res: Response): Promise<EngineError> {
-  let message = res.statusText || "OpenAI request failed.";
+async function mapError(res: Response, label = "OpenAI"): Promise<EngineError> {
+  let message = res.statusText || `${label} request failed.`;
   let code: string | undefined;
   let type: string | undefined;
   try {
@@ -404,7 +409,7 @@ async function mapError(res: Response): Promise<EngineError> {
     )
   ) {
     return new EngineError(
-      `${message} — enable this model for your OpenAI project at platform.openai.com → Settings → Project → Limits.`,
+      `${message} — enable this model for your ${label} project at platform.openai.com → Settings → Project → Limits.`,
       "model_missing",
     );
   }
