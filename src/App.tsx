@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NoteView from "./pages/NoteView";
 import Onboarding from "./pages/Onboarding";
+import AuthCallback from "./pages/AuthCallback";
 import Admin from "./pages/Admin";
 import CanvasBrowse from "./pages/CanvasBrowse";
 import EssayReview from "./pages/EssayReview";
@@ -26,13 +27,14 @@ export default function App() {
     );
   }
 
-  if (!prefs.onboarded && location.pathname !== "/onboarding") {
+  if (!prefs.onboarded && location.pathname !== "/onboarding" && location.pathname !== "/auth/callback") {
     return <Navigate to="/onboarding" replace />;
   }
 
   return (
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/admin" element={<Admin />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />

@@ -87,7 +87,13 @@ export default function Onboarding() {
     setMsg("");
     try {
       if (mode === "signup") {
-        const { error } = await sb.auth.signUp({ email, password });
+        const { error } = await sb.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
         if (error) {
           setMsg(error.message);
         } else {
