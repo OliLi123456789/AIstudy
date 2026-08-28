@@ -1,7 +1,7 @@
 import type { EnginePrefs } from "./types";
 
-/* App preferences persist in localStorage. The API key is injected at build
-   time via VITE_API_KEY — no user key entry needed. */
+/* App preferences persist in localStorage. The API key is server-side only
+   — the client uses an anonymous session token (see lib/engine/auth.ts). */
 
 const KEY = "aistudy.prefs";
 

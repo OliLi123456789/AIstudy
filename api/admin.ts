@@ -1,26 +1,61 @@
 /* Admin API — owner portal backend for managing the AI API key.
  *
- *   GET  /api/admin?action=get-key  → returns the stored API key
- *   POST /api/admin                  → { action, password, key }
+ *   GET  /api/admin?action=get-key  → masked key + provider (AUTH REQUIRED)
+ *   POST /api/admin                  → { action: "login", password }
+ *                                    → { action: "set-key", key, provider }
+ *                                    → { action: "set-canvas-oauth", ... }
  *
- * Requires ADMIN_PASSWORD env var. Uses Vercel KV for storage; falls back
- * to the VITE_API_KEY env var when KV is not configured (local dev). */
+ * Hardening:
+ *   - Login is rate-limited (lockout after repeated failures).
+ *   - Passwords are compared in constant time.
+ *   - Login issues a short-lived HMAC-signed admin token; subsequent calls
+ *     authenticate with `Authorization: Bearer <admin token>`. The raw
+ *     password is never stored client-side.
+ *   - The API key is NEVER returned to the browser — only a masked form.
+ */
 
 import { kv } from "@vercel/kv";
+import {
+  signToken,
+  verifyToken,
+  secureEqual,
+  maskKey,
+  tokenSecret,
+} from "../../shared/server/tokens.mjs";
 
 const KV_KEY = "aistudy:api_key";
 const KV_PROVIDER = "aistudy:api_provider";
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOGIN_WINDOW_SEC = 15 * 60;
+const ADMIN_TOKEN_TTL_SEC = 12 * 60 * 60;
 
+function clientIp(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+}
+
+/* Returns an error Response when the Authorization header does not carry a
+   valid, unexpired admin token. */
 function auth(request: Request): Response | null {
-  const pw = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const expected = process.env.ADMIN_PASSWORD;
-  if (!expected || pw !== expected) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  const payload = verifyToken(token, tokenSecret());
+  if (!payload || payload.t !== "admin") {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
     });
   }
   return null;
+}
+
+/* Sliding-window counter in KV for login lockout. */
+async function incrLimit(key: string, limit: number, windowSec: number): Promise<boolean> {
+  try {
+    const n = await kv.incr(key);
+    if (n === 1) await kv.expire(key, windowSec).catch(() => {});
+    return n <= limit;
+  } catch {
+    return true; // KV unavailable — fail open (KV outage also blocks key storage)
+  }
 }
 
 async function getKey(): Promise<string> {
@@ -28,7 +63,7 @@ async function getKey(): Promise<string> {
     const stored = await kv.get<string>(KV_KEY);
     if (stored) return stored;
   } catch { /* KV not configured — fall through */ }
-  return process.env.VITE_API_KEY ?? "";
+  return process.env.DEEPSEEK_API_KEY || process.env.VITE_API_KEY || "";
 }
 
 async function getProvider(): Promise<string> {
@@ -36,7 +71,7 @@ async function getProvider(): Promise<string> {
     const stored = await kv.get<string>(KV_PROVIDER);
     if (stored) return stored;
   } catch { /* KV not configured */ }
-  return process.env.VITE_AI_PROVIDER ?? "openai";
+  return process.env.VITE_AI_PROVIDER || "deepseek";
 }
 
 async function getCanvasOAuthConfig(): Promise<{
@@ -56,10 +91,12 @@ export async function GET(req: Request): Promise<Response> {
   const action = url.searchParams.get("action");
 
   if (action === "get-key") {
-    // Public: the frontend needs this to build the engine.
+    // Admin-only: returns a MASKED key so it can be displayed safely.
+    const unauth = auth(req);
+    if (unauth) return unauth;
     const key = await getKey();
     const provider = await getProvider();
-    return new Response(JSON.stringify({ key, provider }), {
+    return new Response(JSON.stringify({ key: maskKey(key), provider }), {
       headers: { "content-type": "application/json", "cache-control": "no-store" },
     });
   }
@@ -82,7 +119,7 @@ export async function GET(req: Request): Promise<Response> {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  let body: { action?: string; password?: string; key?: string; clientId?: string; clientSecret?: string; canvasUrl?: string };
+  let body: { action?: string; password?: string; key?: string; provider?: string; clientId?: string; clientSecret?: string; canvasUrl?: string };
   try {
     body = await req.json();
   } catch {
@@ -94,17 +131,26 @@ export async function POST(req: Request): Promise<Response> {
 
   const { action, password, key, clientId, clientSecret, canvasUrl, provider } = body;
 
-  // Login: just validate the password.
+  // Login: constant-time compare + brute-force lockout, issues an admin token.
   if (action === "login") {
+    const ip = clientIp(req);
+    const allowed = await incrLimit(`admin:login:${ip}`, MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_SEC);
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Too many failed attempts. Try again in 15 minutes." }),
+        { status: 423, headers: { "content-type": "application/json", "cache-control": "no-store" } },
+      );
+    }
     const expected = process.env.ADMIN_PASSWORD;
-    if (!expected || password !== expected) {
+    if (!expected || !secureEqual(password, expected)) {
       return new Response(JSON.stringify({ ok: false, error: "bad password" }), {
         status: 401,
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
       });
     }
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { "content-type": "application/json" },
+    const token = signToken({ t: "admin" }, tokenSecret(), ADMIN_TOKEN_TTL_SEC);
+    return new Response(JSON.stringify({ ok: true, token }), {
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
     });
   }
 
@@ -123,7 +169,7 @@ export async function POST(req: Request): Promise<Response> {
       await kv.set(KV_KEY, key.trim());
       if (provider) await kv.set(KV_PROVIDER, provider);
     } catch {
-      return new Response(JSON.stringify({ error: "KV storage unavailable — set VITE_API_KEY env var instead" }), {
+      return new Response(JSON.stringify({ error: "KV storage unavailable — set DEEPSEEK_API_KEY env var instead" }), {
         status: 500,
         headers: { "content-type": "application/json" },
       });

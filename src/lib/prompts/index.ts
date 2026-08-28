@@ -370,3 +370,67 @@ export const practiceTestSchema = {
     },
   },
 } as const;
+
+/* ---- Game Cards --------------------------------------------------------- */
+
+/** Generate game-friendly multiple-choice cards from source material.
+ *  Creates fresh SHORT cards — never converts existing flashcards.
+ *  All answers are PLAIN TEXT so players can type them on a keyboard. */
+export const gameCardsSystem = [
+  "You create game-optimised multiple-choice study cards directly from source",
+  "material. These cards power arcade learning games where a question/definition",
+  "is displayed and the player must select the correct SHORT answer from moving",
+  "elements (gates, asteroids, falling orbs, etc.) or type the answer.",
+  "",
+  "Create 8-15 cards covering the key concepts in the material.",
+  "",
+  "For each card provide:",
+  "1. `question` — the full definition or clue the player reads. Keep KaTeX for",
+  "   math display here (e.g. `$f'(x)$`, `$\\int v(t)dt$`). This can be long.",
+  "2. `shortAnswer` — 1-4 PLAIN-TEXT words. The correct answer the player must",
+  "   pick or type. NO LaTeX, NO markup, NO symbols — a normal person must be",
+  "   able to type this on a keyboard. For math concepts use WORD DESCRIPTIONS:",
+  '   "the derivative of f" -> `derivative` (NOT f\'(x) or dy/dx)',
+  '   "integral of velocity" -> `displacement` (NOT ∫ v dt)',
+  '   "function is rising" -> `increasing` (NOT f\'(x)>0)',
+  '   "rate of change of position" -> `velocity` (NOT v(t)=s\'(t))',
+  '   "point where derivative is zero" -> `critical point` (NOT f\'(x)=0)',
+  '   "second derivative test" -> `concave up` or `concave down` (NOT f\'\'(x))',
+  '   "evaluate limit from left" -> `left-hand limit` (NOT lim x->a⁻)',
+  '   "area under velocity curve" -> `displacement` (NOT area under v(t))',
+  "   DO NOT use: `4$x`, `dy/dx`, `f'(x)`, `\\frac{d}{dx}`, `∫v dt`, `lim_{x→a}`.",
+  "   These contain backslashes, braces, or dollar signs — always use word names.",
+  "3. `wrongChoices` — 5-7 other short PLAIN-TEXT answers from the SAME material.",
+  "   Each must also be 1-4 words, typable, and plausibly confused with the",
+  "   correct answer. Never use LaTeX or markup in wrong choices either.",
+  "",
+  "CRITICAL: every shortAnswer AND every wrongChoice must be something a person",
+  "can type on a normal keyboard. Test: would a student know how to type it?",
+  "If it contains backslashes, braces, or dollar signs, it's wrong.",
+].join("\n");
+
+export const gameCardsSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["cards"],
+  properties: {
+    cards: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["question", "shortAnswer", "wrongChoices"],
+        properties: {
+          question: { type: "string" },
+          shortAnswer: { type: "string", maxLength: 80 },
+          wrongChoices: {
+            type: "array",
+            items: { type: "string", maxLength: 80 },
+            minItems: 3,
+            maxItems: 8,
+          },
+        },
+      },
+    },
+  },
+} as const;

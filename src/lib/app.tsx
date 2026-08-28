@@ -17,7 +17,7 @@ import { memoryStore } from "./db/memory";
 import { createEngine } from "./engine";
 import type { Engine } from "./engine/types";
 import { resilient } from "./engine/resilient";
-import { detectProvider, loadApiKey, getProvider } from "./engine/keys";
+import { getClientAuthToken } from "./engine/auth";
 import { getEnginePrefs, saveEnginePrefs } from "./prefs";
 import type { EnginePrefs } from "./types";
 import { reconcileJobs } from "./generation/pipeline";
@@ -36,15 +36,16 @@ export function getRepo(): Promise<Repo> {
   return repoPromise;
 }
 
-/* Build the engine from the server-stored API key. Returns null if not configured. */
+/* Build the engine from a client auth token (Supabase user when signed in,
+   otherwise the anonymous session token). All AI traffic goes through the
+   same-origin /api/ai proxy — the DeepSeek key never reaches the browser. */
 export async function buildEngine(): Promise<Engine | null> {
-  const key = await loadApiKey();
-  const provider = getProvider() || detectProvider(key) || "openai";
-  if (!key) return null;
+  const token = await getClientAuthToken();
   return resilient(
     createEngine({
-      provider,
-      apiKey: key,
+      provider: "deepseek",
+      apiKey: token,
+      baseUrl: "/api/ai",
     }),
   );
 }

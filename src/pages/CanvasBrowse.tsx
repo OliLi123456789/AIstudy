@@ -50,6 +50,12 @@ export default function CanvasBrowse() {
     try {
       if (tab === "assignments") {
         const items = await client.listAssignments(course.id);
+        // Sort by due date (soonest first, undated last)
+        items.sort((a, b) => {
+          const da = a.due_at ? new Date(a.due_at).getTime() : Infinity;
+          const db = b.due_at ? new Date(b.due_at).getTime() : Infinity;
+          return da - db;
+        });
         setAssignments(items);
       } else if (tab === "files") {
         const items = await client.listFiles(course.id);
@@ -191,39 +197,46 @@ export default function CanvasBrowse() {
             assignments.length === 0 ? (
               <p className="text-ink-faint py-4">No assignments found.</p>
             ) : (
-              assignments.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-start justify-between rounded-xl border border-edge bg-card p-4 shadow-soft"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm">{a.name}</p>
-                    {a.due_at && (
-                      <p className="text-xs text-ink-faint mt-0.5">
-                        Due: {new Date(a.due_at).toLocaleDateString()}
-                      </p>
-                    )}
-                    {a.description && (
-                      <p className="text-xs text-ink-faint mt-1 line-clamp-2">
-                        {a.description.replace(/<[^>]*>/g, "").slice(0, 200)}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() =>
-                      importAsNote({
-                        kind: "text",
-                        text: a.description?.replace(/<[^>]*>/g, "") ?? "",
-                        title: a.name,
-                      })
-                    }
-                    disabled={generating}
-                    className="ml-3 shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover disabled:opacity-50"
+              assignments.map((a) => {
+                const due = a.due_at ? new Date(a.due_at) : null;
+                const overdue = due && due.getTime() < Date.now();
+                const soon = due && !overdue && due.getTime() - Date.now() < 3 * 86400000;
+                return (
+                  <div
+                    key={a.id}
+                    className="flex items-start justify-between rounded-xl border border-edge bg-card p-4 shadow-soft"
                   >
-                    Import
-                  </button>
-                </div>
-              ))
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm">{a.name}</p>
+                      {a.due_at && (
+                        <p className={`text-xs mt-0.5 font-semibold ${overdue ? "text-red-400" : soon ? "text-orange-400" : "text-ink-faint"}`}>
+                          {overdue ? "Overdue: " : "Due: "}
+                          {due!.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          {a.points_possible ? ` · ${a.points_possible} pts` : ""}
+                        </p>
+                      )}
+                      {a.description && (
+                        <p className="text-xs text-ink-faint mt-1 line-clamp-2">
+                          {a.description.replace(/<[^>]*>/g, "").slice(0, 200)}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() =>
+                        importAsNote({
+                          kind: "text",
+                          text: a.description?.replace(/<[^>]*>/g, "") ?? "",
+                          title: a.name,
+                        })
+                      }
+                      disabled={generating}
+                      className="ml-3 shrink-0 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white hover:bg-accent-hover disabled:opacity-50"
+                    >
+                      Import
+                    </button>
+                  </div>
+                );
+              })
             )
           ) : tab === "files" ? (
             files.length === 0 ? (

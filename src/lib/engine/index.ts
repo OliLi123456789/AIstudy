@@ -15,6 +15,8 @@ export interface CreateEngineOptions {
   provider?: Provider;
   apiKey?: string;
   model?: string;
+  /** Route requests through a same-origin AI proxy instead of the provider. */
+  baseUrl?: string;
 }
 
 export function createEngine(opts: CreateEngineOptions): Engine {
@@ -27,10 +29,10 @@ export function createEngine(opts: CreateEngineOptions): Engine {
     case "anthropic":
       return new AnthropicEngine(key, opts.model);
     case "deepseek":
-      return new OpenAIEngine("deepseek", key, opts.model);
+      return new OpenAIEngine("deepseek", key, opts.model, { baseUrl: opts.baseUrl });
     case "openai":
     default:
-      return new OpenAIEngine("openai", key, opts.model);
+      return new OpenAIEngine("openai", key, opts.model, { baseUrl: opts.baseUrl });
   }
 }
 

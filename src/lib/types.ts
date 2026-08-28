@@ -83,6 +83,15 @@ export interface Flashcard {
   state: "new" | "learning" | "review" | "relearning";
 }
 
+/** Game-optimised flashcard: short answer + pre-built wrong choices. */
+export interface GameCard {
+  id: ID;
+  noteId: ID;
+  question: string;     // The definition / clue (shown in the question banner)
+  shortAnswer: string;  // 1-4 word term (shown on moving game elements)
+  wrongChoices: string[]; // 2-4 short alternative answers
+}
+
 export type QuizType = "mcq" | "true_false" | "fill_blank";
 
 export interface QuizQuestion {
@@ -177,4 +186,18 @@ export interface EnginePrefs {
   /* Canvas LMS integration — stored per-user in localStorage. */
   canvasUrl?: string;
   canvasToken?: string;
+}
+
+/* ---- Planner / time management ----------------------------------------- */
+
+/** A user-scheduled study block in the calendar. */
+export interface StudyBlock {
+  id: ID;
+  title: string;
+  noteId?: ID;         // optional linked study note
+  dateKey: string;     // "YYYY-MM-DD" (local)
+  startMin: number;    // minutes from midnight (e.g. 14*60+30 = 14:30)
+  durationMin: number; // e.g. 60
+  done: boolean;
+  createdAt: number;
 }

@@ -4,7 +4,6 @@ import { useApp } from "../lib/app";
 import { chatAnswer } from "../lib/generation";
 import { ingest } from "../lib/ingest";
 import { renderMarkdown } from "../lib/markdown";
-import { estimateTokens } from "../lib/generation/chunk";
 import { uuid, now } from "../lib/ids";
 import type { ChatTurn, Note } from "../lib/types";
 
@@ -44,7 +43,8 @@ export default function Assistant({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [tokenStats, setTokenStats] = useState({ input: 0, output: 0 });
+  const [tokenStats, setTokenStats] = useState({ input: 0, output: 0, cacheMisses: 0, cacheHits: 0 });
+  const msgCount = useRef(0);
 
   useEffect(() => {
     repo?.chatFor(note.id).then(setTurns);
@@ -89,11 +89,18 @@ export default function Assistant({
         acc += d;
         setStreaming(acc);
       });
-      // Track estimated tokens
-      setTokenStats((s) => ({
-        input: s.input + estimateTokens(modelQuestion),
-        output: s.output + estimateTokens(full || acc),
-      }));
+      // Track actual API token usage (from stream_options: include_usage)
+      msgCount.current += 1;
+      const usage = engine.lastUsage;
+      if (usage) {
+        const { promptTokens, completionTokens } = usage;
+        setTokenStats((s) => ({
+          input: s.input + promptTokens,
+          output: s.output + completionTokens,
+          cacheMisses: s.cacheMisses + (msgCount.current === 1 ? promptTokens : 0),
+          cacheHits: s.cacheHits + (msgCount.current > 1 ? promptTokens : 0),
+        }));
+      }
       const asst: ChatTurn = {
         id: uuid(),
         noteId: note.id,
@@ -175,7 +182,7 @@ export default function Assistant({
             <span className="mx-2 opacity-30">|</span>
             <span title="Output tokens">out: {tokenStats.output.toLocaleString()}</span>
             <span className="mx-2 opacity-30">|</span>
-            <span title="Estimated cost">${((tokenStats.input * 0.27 + tokenStats.output * 1.10) / 1_000_000).toFixed(4)}</span>
+            <span title="Est. cost (cache-hit pricing)">${((tokenStats.cacheMisses * 0.14 + tokenStats.cacheHits * 0.0028 + tokenStats.output * 0.28) / 1_000_000).toFixed(6)}</span>
           </div>
         </>
       )}

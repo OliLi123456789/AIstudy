@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import {
+  CalendarDays,
   ChevronsLeft,
   ChevronsRight,
   ClipboardCheck,
@@ -11,16 +12,22 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 import { toggleTheme } from "../lib/theme";
+import { useApp } from "../lib/app";
+import { CANVAS_ENABLED } from "../lib/features";
 
 const navItems = [
   { to: "/", label: "My Studies", icon: Home },
+  { to: "/planner", label: "Planner", icon: CalendarDays },
   { to: "/essay", label: "Essay Review", icon: ClipboardCheck },
-  { to: "/canvas", label: "Canvas", icon: GraduationCap },
+  { to: "/canvas", label: "Canvas", icon: GraduationCap, canvasOnly: true },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
+  const { prefs } = useApp();
+  const canvasConnected = CANVAS_ENABLED && !!(prefs.canvasToken && prefs.canvasUrl);
+  const visibleItems = navItems.filter((i) => !i.canvasOnly || canvasConnected);
 
   return (
     <div className="flex h-full bg-bg">
@@ -48,7 +55,7 @@ export default function AppShell() {
         </div>
 
         <nav className="flex flex-col gap-1 px-3">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {visibleItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

@@ -5,11 +5,13 @@ import type {
   ChatTurn,
   Flashcard,
   Folder,
+  GameCard,
   Job,
   Note,
   Podcast,
   QuizAttempt,
   QuizQuestion,
+  StudyBlock,
 } from "../types";
 
 /* Collections keyed by id. `by` fields enable cheap filtered reads. */
@@ -32,6 +34,9 @@ export const COLLECTIONS = {
   podcasts: "podcasts",
   chat: "chat",
   jobs: "jobs",
+  gameScores: "gameScores",
+  studyBlocks: "studyBlocks",
+  gameCards: "gameCards",
 } as const;
 
 /* High-level repository over a Store. This is what generation code and the UI
@@ -50,6 +55,7 @@ export class Repo {
       COLLECTIONS.attempts,
       COLLECTIONS.podcasts,
       COLLECTIONS.chat,
+      COLLECTIONS.gameCards,
     ]) {
       const rows = await this.store.where<{ id: string; noteId: string }>(c, {
         noteId: id,
@@ -76,17 +82,26 @@ export class Repo {
   // flashcards
   cardsFor = (noteId: string) =>
     this.store.where<Flashcard>(COLLECTIONS.flashcards, { noteId });
+  allCards = () => this.store.all<Flashcard>(COLLECTIONS.flashcards);
   putCard = (c: Flashcard) => this.store.put(COLLECTIONS.flashcards, c);
   putCards = (cs: Flashcard[]) =>
     Promise.all(cs.map((c) => this.store.put(COLLECTIONS.flashcards, c)));
 
+  // game cards
+  gameCardsFor = (noteId: string) =>
+    this.store.where<GameCard>(COLLECTIONS.gameCards, { noteId });
+  putGameCards = (cs: GameCard[]) =>
+    Promise.all(cs.map((c) => this.store.put(COLLECTIONS.gameCards, c)));
+
   // quiz
   questionsFor = (noteId: string) =>
     this.store.where<QuizQuestion>(COLLECTIONS.quiz, { noteId });
+  allQuestions = () => this.store.all<QuizQuestion>(COLLECTIONS.quiz);
   putQuestions = (qs: QuizQuestion[]) =>
     Promise.all(qs.map((q) => this.store.put(COLLECTIONS.quiz, q)));
   attemptsFor = (noteId: string) =>
     this.store.where<QuizAttempt>(COLLECTIONS.attempts, { noteId });
+  allAttempts = () => this.store.all<QuizAttempt>(COLLECTIONS.attempts);
   putAttempt = (a: QuizAttempt) => this.store.put(COLLECTIONS.attempts, a);
   resetQuiz = async (noteId: string) => {
     const rows = await this.attemptsFor(noteId);
@@ -118,6 +133,13 @@ export class Repo {
     (await this.store.all<Job>(COLLECTIONS.jobs)).filter(
       (j) => j.status === "running" || j.status === "queued",
     );
+
+  // planner study blocks
+  studyBlocksOn = (dateKey: string) =>
+    this.store.where<StudyBlock>(COLLECTIONS.studyBlocks, { dateKey } as Partial<StudyBlock>);
+  allStudyBlocks = () => this.store.all<StudyBlock>(COLLECTIONS.studyBlocks);
+  putStudyBlock = (b: StudyBlock) => this.store.put(COLLECTIONS.studyBlocks, b);
+  deleteStudyBlock = (id: string) => this.store.delete(COLLECTIONS.studyBlocks, id);
 
   /* Delete notes (and all linked data) not opened in `days` days.
      Returns the count of removed notes. */

@@ -16,13 +16,11 @@ import {
   Link2,
   ListChecks,
   Loader2,
-  MessageCircle,
   Target,
   Upload,
   X,
 } from "lucide-react";
 import CreateNoteModal, { type NoteSource } from "../components/CreateNoteModal";
-import Assistant from "../components/Assistant";
 import FlashcardsView from "../components/FlashcardsView";
 import { useApp } from "../lib/app";
 import type { IngestInput } from "../lib/ingest";
@@ -35,9 +33,13 @@ import {
 } from "../lib/generation/index";
 import type { Flashcard, Folder, Job, Note, QuizAttempt, QuizQuestion } from "../lib/types";
 
+/* Folder-level study (Study All, folder quiz, folder practice test) is HIDDEN
+   for now: folders are organization-only, open a doc to study it. Flip this
+   flag back to true to restore the folder study rail — nothing was deleted. */
+const FOLDER_STUDY_ENABLED = false;
+
 const railViews = [
   { view: "overview", icon: BarChart3, label: "Overview" },
-  { view: "chat", icon: MessageCircle, label: "Chat" },
   { view: "flashcards", icon: Layers, label: "Flashcards" },
   { view: "quiz", icon: ListChecks, label: "Quiz" },
 ];
@@ -126,7 +128,8 @@ export default function FolderView() {
 
   return (
     <div className="flex h-full bg-bg">
-      {/* Sidebar rail — same style as NoteView */}
+      {/* Sidebar rail — same style as NoteView (hidden while folder study is disabled) */}
+      {FOLDER_STUDY_ENABLED && (
       <aside className={`flex shrink-0 flex-col border-r border-edge bg-panel transition-all ${collapsed ? "w-16" : "w-48"}`}>
         <div className="flex items-center justify-between px-4 py-5">
           {!collapsed && <span className="font-display text-sm font-bold truncate">{folder.name}</span>}
@@ -159,9 +162,19 @@ export default function FolderView() {
           )}
         </div>
       </aside>
+      )}
 
       {/* Main content */}
       <main className="min-w-0 flex-1 overflow-y-auto">
+        {!FOLDER_STUDY_ENABLED && (
+          <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-edge bg-panel/95 px-6 py-3 backdrop-blur">
+            <button onClick={() => navigate("/")} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-ink-faint hover:text-ink transition">
+              <ArrowLeft className="size-4" /> Back
+            </button>
+            <span className="font-display text-sm font-bold truncate">{folder.name}</span>
+            <span className="text-xs text-ink-faint">Organization only — open a document to study</span>
+          </div>
+        )}
         {err && <div className="m-4 rounded-xl border border-danger-ink/30 bg-danger-soft px-4 py-3 text-sm font-semibold text-danger-ink">{err}</div>}
         {job && (
           <div className="m-4 flex items-center gap-3 rounded-xl border border-edge bg-card px-4 py-3 text-sm font-semibold shadow-soft">
@@ -187,9 +200,8 @@ export default function FolderView() {
           />
         )}
 
-        {activeView === "chat" && anchorNote && <Assistant note={{ ...anchorNote, sourceText: combinedContent }} variant="hero" />}
-        {activeView === "flashcards" && anchorNote && <FlashcardsView note={{ ...anchorNote, sourceText: combinedContent }} />}
-        {activeView === "quiz" && anchorNote && <FolderQuizView notes={notes} anchorNote={anchorNote} />}
+        {FOLDER_STUDY_ENABLED && activeView === "flashcards" && anchorNote && <FlashcardsView note={{ ...anchorNote, sourceText: combinedContent }} />}
+        {FOLDER_STUDY_ENABLED && activeView === "quiz" && anchorNote && <FolderQuizView notes={notes} anchorNote={anchorNote} />}
       </main>
 
       {/* Practice Test modal */}
@@ -284,9 +296,9 @@ function FolderOverview({
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{folder.name}</h1>
-          <p className="mt-1 text-ink-faint">{notes.length} {notes.length === 1 ? "document" : "documents"}</p>
+          <p className="mt-1 text-ink-faint">{notes.length} {notes.length === 1 ? "document" : "documents"} · open one to study it</p>
         </div>
-        {notes.length > 0 && (
+        {FOLDER_STUDY_ENABLED && notes.length > 0 && (
           <button onClick={onStudyAll} disabled={studying || !engine} className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent-hover disabled:opacity-50">
             {studying ? <Loader2 className="size-4 animate-spin" /> : <Layers className="size-4" />} Study All
           </button>

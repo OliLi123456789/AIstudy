@@ -9,7 +9,9 @@ import Admin from "./pages/Admin";
 import CanvasBrowse from "./pages/CanvasBrowse";
 import EssayReview from "./pages/EssayReview";
 import FolderView from "./pages/FolderView";
+import Planner from "./pages/Planner";
 import { useApp } from "./lib/app";
+import { CANVAS_ENABLED } from "./lib/features";
 
 export default function App() {
   const location = useLocation();
@@ -35,7 +37,8 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/essay" element={<EssayReview />} />
-        <Route path="/canvas" element={<CanvasBrowse />} />
+        {CANVAS_ENABLED && <Route path="/canvas" element={<CanvasBrowse />} />}
+        <Route path="/planner" element={<Planner />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="/folder/:folderId" element={<FolderView />} />

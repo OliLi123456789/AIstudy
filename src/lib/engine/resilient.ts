@@ -52,6 +52,7 @@ async function withBackoff<T>(fn: () => Promise<T>, signal?: AbortSignal): Promi
 export function resilient(engine: Engine): Engine {
   return {
     provider: engine.provider,
+    get lastUsage() { return engine.lastUsage; },
     capabilities: () => engine.capabilities(),
     complete: (opts: CompletionOptions, onToken?: TokenHandler) =>
       withBackoff(() => engine.complete(opts, onToken), opts.signal),

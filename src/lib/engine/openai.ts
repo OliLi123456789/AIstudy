@@ -8,12 +8,14 @@ import type {
   EngineCapabilities,
   StructuredOptions,
   TokenHandler,
+  TokenUsage,
   TranscriptResult,
   TranscriptSegment,
   TtsOptions,
 } from "./types";
 import { EngineError } from "./types";
 import type { Provider } from "../types";
+import { getClientAuthToken, resetClientAuthToken } from "./auth";
 
 interface ProviderConfig {
   baseUrl: string;
@@ -61,15 +63,26 @@ export class OpenAIEngine implements Engine {
   readonly provider: Provider;
   private readonly baseUrl: string;
   private readonly cfg: ProviderConfig;
+  private readonly proxyMode: boolean;
+  private apiKey: string;
+  lastUsage?: TokenUsage;
 
   constructor(
     provider: Provider,
-    private readonly apiKey: string,
+    apiKey: string,
     private readonly modelOverride?: string,
+    opts: { baseUrl?: string } = {},
   ) {
     this.provider = provider;
     this.cfg = PROVIDERS[provider];
-    this.baseUrl = this.cfg.baseUrl;
+    this.proxyMode = Boolean(opts.baseUrl);
+    this.baseUrl = opts.baseUrl ?? this.cfg.baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  /* Completion endpoint path — the AI proxy mounts it at /chat. */
+  private get chatPath(): string {
+    return this.proxyMode ? "/chat" : "/chat/completions";
   }
 
   capabilities(): EngineCapabilities {
@@ -82,10 +95,11 @@ export class OpenAIEngine implements Engine {
   }
 
   async complete(opts: CompletionOptions, onToken?: TokenHandler): Promise<string> {
-    const res = await this.post("/chat/completions", {
+    const res = await this.post(this.chatPath, {
       model: this.resolveModel(opts.tier),
       messages: buildMessages(opts),
       stream: true,
+      stream_options: { include_usage: true },
       ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
       ...(opts.maxTokens !== undefined ? { max_tokens: opts.maxTokens } : {}),
     }, opts.signal);
@@ -110,6 +124,14 @@ export class OpenAIEngine implements Engine {
         if (!data || data === "[DONE]") continue;
         try {
           const json = JSON.parse(data);
+          // Capture usage from the final chunk (choices array is empty)
+          if (json.usage) {
+            this.lastUsage = {
+              promptTokens: json.usage.prompt_tokens ?? 0,
+              completionTokens: json.usage.completion_tokens ?? 0,
+            };
+            continue;
+          }
           const delta: string | undefined = json.choices?.[0]?.delta?.content;
           if (delta) {
             full += delta;
@@ -128,7 +150,7 @@ export class OpenAIEngine implements Engine {
 
     if (this.cfg.supportsJsonSchema) {
       // OpenAI native strict structured output
-      const res = await this.post("/chat/completions", {
+      const res = await this.post(this.chatPath, {
         model: this.resolveModel(opts.tier),
         messages,
         stream: false,
@@ -163,7 +185,7 @@ export class OpenAIEngine implements Engine {
       ...userMsgs,
     ];
 
-    const res = await this.post("/chat/completions", {
+    const res = await this.post(this.chatPath, {
       model: this.resolveModel(opts.tier),
       messages: promptMessages,
       stream: false,
@@ -183,6 +205,9 @@ export class OpenAIEngine implements Engine {
   }
 
   async transcribe(audio: Blob, signal?: AbortSignal): Promise<TranscriptResult> {
+    if (this.proxyMode) {
+      throw new EngineError("Transcription is not available through the AI proxy.", "unsupported");
+    }
     if (!this.cfg.hasTranscription) {
       throw new EngineError("Transcription is not supported by this provider.", "unsupported");
     }
@@ -216,6 +241,9 @@ export class OpenAIEngine implements Engine {
   }
 
   async tts(text: string, opts: TtsOptions): Promise<Blob> {
+    if (this.proxyMode) {
+      throw new EngineError("Text-to-speech is not available through the AI proxy.", "unsupported");
+    }
     if (!this.cfg.hasTts) {
       throw new EngineError("Text-to-speech is not supported by this provider.", "unsupported");
     }
@@ -242,6 +270,9 @@ export class OpenAIEngine implements Engine {
   }
 
   async embed(texts: string[], signal?: AbortSignal): Promise<number[][]> {
+    if (this.proxyMode) {
+      throw new EngineError("Embeddings are not available through the AI proxy.", "unsupported");
+    }
     if (!this.cfg.hasEmbeddings) {
       throw new EngineError("Embeddings are not supported by this provider.", "unsupported");
     }
@@ -254,8 +285,19 @@ export class OpenAIEngine implements Engine {
   }
 
   async validate(): Promise<void> {
-    // DeepSeek doesn't have a /models endpoint — use /chat/completions with a minimal request
     const label = this.provider === "deepseek" ? "DeepSeek" : "OpenAI";
+
+    if (this.proxyMode) {
+      // Server-side check: session token + configured key (no paid call).
+      const res = await this.post("/validate", {});
+      const data = await res.json().catch(() => ({}));
+      if (data && typeof data === "object" && (data as { ok?: boolean }).ok === false) {
+        throw new EngineError(`${label} is not configured on the server.`, "auth");
+      }
+      return;
+    }
+
+    // DeepSeek doesn't have a /models endpoint — use /chat/completions with a minimal request
     let res: Response;
     try {
       if (this.provider === "deepseek") {
@@ -290,8 +332,9 @@ export class OpenAIEngine implements Engine {
     };
   }
 
-  /* Shared POST helper: sends JSON, handles network failure + non-2xx mapping. */
-  private async post(path: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<Response> {
+  /* Shared POST helper: sends JSON, handles network failure + non-2xx mapping.
+     In proxy mode, a 401 triggers a one-time session-token refresh. */
+  private async post(path: string, body: Record<string, unknown>, signal?: AbortSignal, allowRetry = true): Promise<Response> {
     let res: Response;
     try {
       res = await fetch(`${this.baseUrl}${path}`, {
@@ -302,6 +345,16 @@ export class OpenAIEngine implements Engine {
       });
     } catch (err) {
       throw toNetworkError(err);
+    }
+    if (res.status === 401 && this.proxyMode && allowRetry) {
+      // Session token expired or rotated — re-issue once and retry.
+      resetClientAuthToken();
+      try {
+        this.apiKey = await getClientAuthToken();
+      } catch {
+        throw await mapError(res);
+      }
+      return this.post(path, body, signal, false);
     }
     if (!res.ok) throw await mapError(res);
     return res;

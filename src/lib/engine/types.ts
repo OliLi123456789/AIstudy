@@ -55,8 +55,15 @@ export interface EngineCapabilities {
   embeddings: boolean;
 }
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface Engine {
   readonly provider?: Provider;
+  /** After each `complete` call, holds the token usage from the API response. */
+  lastUsage?: TokenUsage;
   capabilities(): EngineCapabilities;
 
   /* Streaming free-form completion. Returns the full text; streams deltas. */

@@ -47,6 +47,22 @@ export interface CanvasFile {
   "content-type": string;
 }
 
+/** A calendar event from Canvas's upcoming-events feed. */
+export interface CanvasUpcomingEvent {
+  id: string;
+  title: string;
+  type: string; // "assignment" | "quiz" | "discussion" ...
+  start_at?: string;
+  end_at?: string;
+  all_day?: boolean;
+  html_url?: string;
+  context_name?: string; // course name
+  assignment?: {
+    due_at?: string;
+    points_possible?: number;
+  };
+}
+
 function proxyUrl(
   path: string,
   token: string,
@@ -105,6 +121,10 @@ export function createCanvasClient(token: string, baseUrl: string) {
     /** Test the connection — returns the current user's profile. */
     validate: (): Promise<{ id: number; name: string }> =>
       fetchPath("/api/v1/users/self"),
+
+    /** Upcoming calendar events (assignments, quizzes, etc. with due dates). */
+    listUpcomingEvents: (): Promise<CanvasUpcomingEvent[]> =>
+      fetchPath("/api/v1/users/self/upcoming_events", { per_page: "50" }),
   };
 }
 

@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
 import {
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   Download,
   FileText,
+  Gamepad2,
   History,
   BarChart3,
   Layers,
   ListChecks,
   Loader2,
   Menu,
-  MessageCircle,
   MoreVertical,
   Palette,
   X,
@@ -20,9 +18,9 @@ import {
 import { toggleTheme } from "../lib/theme";
 import { useApp } from "../lib/app";
 import BlockEditor from "../components/BlockEditor";
-import Assistant from "../components/Assistant";
 import FlashcardsView from "../components/FlashcardsView";
 import QuizView from "../components/QuizView";
+import GamesView from "../components/games/GamesView";
 import ProgressView from "../components/ProgressView";
 import { generatePracticeTest } from "../lib/generation/index";
 import {
@@ -37,9 +35,9 @@ import type { Block, Note } from "../lib/types";
 const railViews = [
   { view: "editor", icon: FileText, label: "Editor" },
   { view: "progress", icon: BarChart3, label: "Progress" },
-  { view: "chat", icon: MessageCircle, label: "Chat" },
   { view: "flashcards", icon: Layers, label: "Flashcards" },
   { view: "quiz", icon: ListChecks, label: "Quiz" },
+  { view: "games", icon: Gamepad2, label: "Games" },
 ];
 
 export default function NoteView() {
@@ -138,12 +136,12 @@ export default function NoteView() {
           <EditorView note={note} onNote={setNote} />
         ) : view === "progress" ? (
           <ProgressView note={note} />
-        ) : view === "chat" ? (
-          <Assistant note={note} variant="hero" />
         ) : view === "flashcards" ? (
           <FlashcardsView note={note} />
         ) : view === "quiz" ? (
           <QuizView note={note} />
+        ) : view === "games" ? (
+          <GamesView note={note} />
         ) : null}
 
         {/* Practice Test modal */}
@@ -226,7 +224,6 @@ function EditorView({
   onNote: (n: Note) => void;
 }) {
   const { repo } = useApp();
-  const [panelOpen, setPanelOpen] = useState(true);
   const [title, setTitle] = useState(note.title);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -259,48 +256,12 @@ function EditorView({
               <History className="size-4.5" />
             </button>
             <ExportMenu note={{ ...note, title }} />
-            {!panelOpen && (
-              <button
-                onClick={() => setPanelOpen(true)}
-                className="rounded-xl bg-accent-soft px-4 py-1.5 font-display text-sm font-bold text-ink hover:opacity-90"
-              >
-                Assistant
-              </button>
-            )}
           </div>
         </div>
         <div className="mx-6 mb-6 flex-1 overflow-y-auto rounded-card border border-edge bg-card p-8 shadow-soft">
           <BlockEditor key={note.id} blocks={note.blocks} onChange={onBlocks} />
         </div>
       </div>
-
-      {panelOpen ? (
-        <div className="my-6 mr-6 flex w-[420px] shrink-0 flex-col rounded-card border border-edge bg-card shadow-soft">
-          <div className="flex items-center justify-between p-3">
-            <span className="pl-1 font-display text-sm font-bold text-ink-dim">Assistant</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPanelOpen(false)}
-                className="rounded-xl bg-accent-soft p-2 text-ink hover:opacity-90"
-                aria-label="Collapse assistant"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
-          </div>
-          <div className="min-h-0 flex-1">
-            <Assistant note={note} variant="panel" />
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setPanelOpen(true)}
-          className="m-6 h-fit rounded-xl bg-accent-soft p-2 text-ink hover:opacity-90"
-          aria-label="Open assistant"
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-      )}
     </div>
   );
 }

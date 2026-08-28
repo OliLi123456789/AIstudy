@@ -13,6 +13,7 @@ import type {
   EngineCapabilities,
   StructuredOptions,
   TokenHandler,
+  TokenUsage,
   TranscriptResult,
   TtsOptions,
 } from "./types";
@@ -26,6 +27,7 @@ const UNSUPPORTED_MESSAGE =
 
 export class AnthropicEngine implements Engine {
   readonly provider = "anthropic" as const;
+  lastUsage?: TokenUsage;
 
   constructor(
     private readonly apiKey: string,
@@ -52,6 +54,8 @@ export class AnthropicEngine implements Engine {
     const decoder = new TextDecoder();
     let buffer = "";
     let full = "";
+    let inputTokens = 0;
+    let outputTokens = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -66,6 +70,14 @@ export class AnthropicEngine implements Engine {
         if (!data) continue;
         try {
           const json = JSON.parse(data);
+          // Capture input tokens from message_start
+          if (json.type === "message_start" && json.message?.usage?.input_tokens) {
+            inputTokens = json.message.usage.input_tokens;
+          }
+          // Capture output tokens from message_delta
+          if (json.type === "message_delta" && json.usage?.output_tokens) {
+            outputTokens = json.usage.output_tokens;
+          }
           if (json.type === "content_block_delta" && json.delta?.type === "text_delta") {
             const text: string = json.delta.text ?? "";
             if (text) {
@@ -78,6 +90,7 @@ export class AnthropicEngine implements Engine {
         }
       }
     }
+    this.lastUsage = { promptTokens: inputTokens, completionTokens: outputTokens };
     return full;
   }
 

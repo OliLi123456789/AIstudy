@@ -9,8 +9,9 @@ import {
   Zap,
 } from "lucide-react";
 import { useApp } from "../lib/app";
-import { loadApiKey, detectProvider, getProvider } from "../lib/engine/keys";
 import { createCanvasClient } from "../lib/canvas";
+import { CANVAS_ENABLED } from "../lib/features";
+import AuthCard from "../components/AuthCard";
 import { exportMarkdown, downloadText } from "../lib/export";
 
 export default function Settings() {
@@ -21,14 +22,10 @@ export default function Settings() {
   const [canvasStatus, setCanvasStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
   const [canvasMsg, setCanvasMsg] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [key, setKey] = useState("");
-
-  useEffect(() => {
-    loadApiKey().then(setKey);
-  }, []);
 
   // Handle Canvas OAuth callback when popup is blocked (redirect fallback)
   useEffect(() => {
+    if (!CANVAS_ENABLED) return;
     const params = new URLSearchParams(window.location.search);
     const session = params.get("canvas_session");
     if (session) {
@@ -56,7 +53,8 @@ export default function Settings() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const provider = getProvider() || (key ? detectProvider(key) : null);
+  // The AI engine is DeepSeek via the server-side /api/ai proxy — the API
+  // key never reaches the browser, so there is nothing to display here.
 
   return (
     <div className="px-10 py-8">
@@ -96,6 +94,8 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
+          <AuthCard />
+
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
             <div className="flex items-start justify-between">
               <div>
@@ -104,17 +104,17 @@ export default function Settings() {
                   AI Engine
                 </h2>
                 <p className="mt-1 text-sm text-ink-faint">
-                  Powered by {provider === "anthropic" ? "Anthropic" : provider === "openai" ? "OpenAI" : "AI"} — no setup required. Just start creating.
+                  Powered by DeepSeek — the API key is managed securely on the
+                  server and is never exposed to the browser.
                 </p>
               </div>
-              {provider && (
-                <span className="shrink-0 rounded-full bg-accent-softer px-3 py-1.5 text-xs font-bold text-accent">
-                  {provider === "anthropic" ? "Anthropic" : "OpenAI"}
-                </span>
-              )}
+              <span className="shrink-0 rounded-full bg-accent-softer px-3 py-1.5 text-xs font-bold text-accent">
+                DeepSeek
+              </span>
             </div>
           </div>
 
+          {CANVAS_ENABLED && (
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
             <h2 className="flex items-center gap-2 font-display text-xl font-bold">
               <GraduationCap className="size-5 text-accent" />
@@ -233,6 +233,7 @@ export default function Settings() {
               </div>
             )}
           </div>
+          )}
 
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
             <h2 className="flex items-center gap-2 font-display text-xl font-bold">

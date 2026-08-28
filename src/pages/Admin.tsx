@@ -5,10 +5,11 @@ import { useEffect, useState } from "react";
 import { GraduationCap, KeyRound, Lock, Shield, Zap } from "lucide-react";
 import { detectProvider } from "../lib/engine/keys";
 import type { Provider } from "../lib/types";
+import { CANVAS_ENABLED } from "../lib/features";
 
 export default function Admin() {
   const [password, setPassword] = useState("");
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState(() => Boolean(sessionStorage.getItem("admin_token")));
   const [newKey, setNewKey] = useState("");
   const [provider, setProvider] = useState<Provider>("openai");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -23,23 +24,37 @@ export default function Admin() {
   const [canvasOAuthMsg, setCanvasOAuthMsg] = useState("");
   const [canvasOAuthConfigured, setCanvasOAuthConfigured] = useState(false);
 
-  // Check current key provider on mount
+  // Check current key provider on mount (only when we have an admin token).
   useEffect(() => {
-    fetch("/api/admin?action=get-key")
-      .then((r) => r.json())
+    const tok = sessionStorage.getItem("admin_token");
+    if (!tok) return;
+    fetch("/api/admin?action=get-key", { headers: { authorization: `Bearer ${tok}` } })
+      .then((r) => {
+        if (r.status === 401) {
+          sessionStorage.removeItem("admin_token");
+          setAuthed(false);
+          return null;
+        }
+        return r.json();
+      })
       .then((d) => {
-        if (d.key) setCurrentProvider(detectProvider(d.key));
+        if (!d) return;
         if (d.provider) setProvider(d.provider as Provider);
+        if (d.key) {
+          setCurrentProvider(`${d.provider === "anthropic" ? "Anthropic" : d.provider === "deepseek" ? "DeepSeek" : "OpenAI"} · ${d.key}`);
+        }
       })
       .catch(() => {});
     // Check Canvas OAuth config
-    fetch("/api/admin?action=get-canvas-oauth")
-      .then((r) => r.json())
-      .then((d) => {
-        setCanvasOAuthConfigured(d.configured);
-        if (d.canvasUrl) setCanvasOAuthUrl(d.canvasUrl);
-      })
-      .catch(() => {});
+    if (CANVAS_ENABLED) {
+      fetch("/api/admin?action=get-canvas-oauth")
+        .then((r) => r.json())
+        .then((d) => {
+          setCanvasOAuthConfigured(d.configured);
+          if (d.canvasUrl) setCanvasOAuthUrl(d.canvasUrl);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   async function login() {
@@ -51,10 +66,12 @@ export default function Admin() {
         body: JSON.stringify({ action: "login", password }),
       });
       const data = await res.json();
-      if (data.ok) {
+      if (data.ok && data.token) {
         setAuthed(true);
-        // Store password in memory for subsequent calls
-        sessionStorage.setItem("admin_pw", password);
+        // Store the short-lived admin token — never the password.
+        sessionStorage.setItem("admin_token", data.token);
+        setPassword("");
+        window.location.reload();
       } else {
         setMsg(data.error || "Invalid password");
       }
@@ -67,15 +84,20 @@ export default function Admin() {
     setStatus("saving");
     setMsg("");
     try {
-      const pw = sessionStorage.getItem("admin_pw") || password;
+      const tok = sessionStorage.getItem("admin_token");
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${pw}`,
+          authorization: `Bearer ${tok}`,
         },
         body: JSON.stringify({ action: "set-key", key: newKey, provider }),
       });
+      if (res.status === 401) {
+        sessionStorage.removeItem("admin_token");
+        setAuthed(false);
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         setStatus("saved");
@@ -95,12 +117,12 @@ export default function Admin() {
     setCanvasOAuthStatus("saving");
     setCanvasOAuthMsg("");
     try {
-      const pw = sessionStorage.getItem("admin_pw") || password;
+      const tok = sessionStorage.getItem("admin_token");
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${pw}`,
+          authorization: `Bearer ${tok}`,
         },
         body: JSON.stringify({
           action: "set-canvas-oauth",
@@ -171,7 +193,7 @@ export default function Admin() {
           </div>
           <p className="mt-2 text-sm text-ink-faint">
             {currentProvider
-              ? `Active provider: ${currentProvider === "anthropic" ? "Anthropic" : "OpenAI"}`
+              ? `Active provider: ${currentProvider}`
               : "No API key configured. Add one below."}
           </p>
         </div>
@@ -227,7 +249,8 @@ export default function Admin() {
           </p>
         </div>
 
-        {/* Canvas OAuth */}
+        {/* Canvas OAuth (hidden while disabled) */}
+        {CANVAS_ENABLED && (
         <div className="rounded-card border border-edge bg-card p-5 shadow-soft">
           <label className="flex items-center gap-2 font-display font-bold">
             <GraduationCap className="size-5 text-accent" />
@@ -290,6 +313,7 @@ export default function Admin() {
             </p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
