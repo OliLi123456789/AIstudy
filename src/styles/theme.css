@@ -8,8 +8,8 @@
   --font-display: "Quicksand Variable", "Nunito", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Nunito", "Quicksand Variable", ui-sans-serif, system-ui, sans-serif;
 
-  --color-accent: #6923ff;
-  --color-accent-hover: #5a1de0;
+  --color-accent: #0f766e;
+  --color-accent-hover: #115e59;
   --color-accent-soft: var(--nitro-accent-soft);
   --color-accent-softer: var(--nitro-accent-softer);
 
@@ -37,37 +37,37 @@
 
 :root,
 :root[data-theme="light"] {
-  --nitro-bg: #ffffff;
-  --nitro-panel: #fafafa;
+  --nitro-bg: #f8fafc;
+  --nitro-panel: #ffffff;
   --nitro-card: #ffffff;
-  --nitro-card-hover: #f6f4fb;
-  --nitro-edge: #e4e4e7;
-  --nitro-ink: #27272a;
-  --nitro-ink-dim: #71717a;
-  --nitro-ink-faint: #a1a1aa;
-  --nitro-accent-soft: #dcc8fb;
-  --nitro-accent-softer: #f3ecfd;
-  --nitro-callout-bg: #faf3cd;
-  --nitro-callout-ink: #8a6d1a;
-  --nitro-danger-soft: #fde3dd;
-  --nitro-success-soft: #d3ecc9;
+  --nitro-card-hover: #f0f4f8;
+  --nitro-edge: #dbe3ec;
+  --nitro-ink: #1e293b;
+  --nitro-ink-dim: #475569;
+  --nitro-ink-faint: #94a3b8;
+  --nitro-accent-soft: #99f6e4;
+  --nitro-accent-softer: #e2f7f4;
+  --nitro-callout-bg: #fff7dd;
+  --nitro-callout-ink: #7c5a13;
+  --nitro-danger-soft: #fde3e3;
+  --nitro-success-soft: #dcedd8;
 }
 
 :root[data-theme="dark"] {
-  --nitro-bg: #18181b;
-  --nitro-panel: #1f1f23;
-  --nitro-card: #232327;
-  --nitro-card-hover: #2a2a30;
-  --nitro-edge: #33333a;
-  --nitro-ink: #f4f4f5;
-  --nitro-ink-dim: #a1a1aa;
-  --nitro-ink-faint: #71717a;
-  --nitro-accent-soft: #4c2a99;
-  --nitro-accent-softer: #2c2140;
-  --nitro-callout-bg: #3a3423;
-  --nitro-callout-ink: #e6cf6b;
-  --nitro-danger-soft: #46262a;
-  --nitro-success-soft: #24371f;
+  --nitro-bg: #0b111b;
+  --nitro-panel: #111a27;
+  --nitro-card: #16202e;
+  --nitro-card-hover: #1b2736;
+  --nitro-edge: #26313f;
+  --nitro-ink: #e6edf5;
+  --nitro-ink-dim: #9aa8ba;
+  --nitro-ink-faint: #64748b;
+  --nitro-accent-soft: #134e4a;
+  --nitro-accent-softer: #122a2c;
+  --nitro-callout-bg: #33301f;
+  --nitro-callout-ink: #d6c36b;
+  --nitro-danger-soft: #3a2427;
+  --nitro-success-soft: #1f3222;
 }
 
 html,
