@@ -30,13 +30,18 @@ export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const { prefs, savePrefs } = useApp();
   const [signedIn, setSignedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const sb = getSupabase();
     if (!sb) return;
-    sb.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
+    sb.auth.getSession().then(({ data }) => {
+      setSignedIn(Boolean(data.session));
+      setUserEmail(data.session?.user.email ?? null);
+    });
     const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
       setSignedIn(Boolean(session));
+      setUserEmail(session?.user.email ?? null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -107,9 +112,9 @@ export default function AppShell() {
           </button>
           <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-soft font-display text-xs font-bold text-accent">
-              N
+              {(userEmail ?? "Y").charAt(0).toUpperCase()}
             </div>
-            {!collapsed && <span className="truncate text-sm font-semibold">You</span>}
+            {!collapsed && <span className="truncate text-sm font-semibold">{userEmail ?? "You"}</span>}
           </div>
           {signedIn && (
             <button

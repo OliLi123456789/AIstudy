@@ -20,6 +20,7 @@ import { resilient } from "./engine/resilient";
 import { getClientAuthToken } from "./engine/auth";
 import { getEnginePrefs, saveEnginePrefs } from "./prefs";
 import type { EnginePrefs } from "./types";
+import { getSupabase } from "./supabase";
 import { reconcileJobs } from "./generation/pipeline";
 
 let repoPromise: Promise<Repo> | null = null;
@@ -94,6 +95,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
+  }, []);
+
+  /* Auth gate: a signed-in Supabase user is always onboarded; when Supabase
+     is configured and there is no session, force the landing page. This is
+     what makes "logged out ⇒ landing" actually stick. */
+  useEffect(() => {
+    const sb = getSupabase();
+    if (!sb) return;
+    sb.auth.getSession().then(({ data }) => {
+      setPrefs((prev) => ({ ...prev, onboarded: Boolean(data.session) }));
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      setPrefs((prev) => ({ ...prev, onboarded: Boolean(session) }));
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   const value = useMemo<AppCtx>(
