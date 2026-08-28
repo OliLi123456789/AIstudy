@@ -22,7 +22,7 @@ function describeStats(s: SyncStats): string {
 }
 
 export default function AuthCard() {
-  const { repo, bump } = useApp();
+  const { repo, bump, prefs, savePrefs } = useApp();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -76,6 +76,8 @@ export default function AuthCard() {
     if (!sb) return;
     await sb.auth.signOut();
     setSyncMsg("");
+    // Return to the landing page (accounts are required while signed out).
+    savePrefs({ ...prefs, onboarded: false });
   }
 
   async function syncNow() {

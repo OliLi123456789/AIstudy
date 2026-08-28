@@ -165,6 +165,7 @@ export default function Onboarding() {
                 <button
                   onClick={async () => {
                     await getSupabase()?.auth.signOut();
+                    savePrefs({ ...getEnginePrefs(), onboarded: false });
                   }}
                   className="mt-3 text-sm font-semibold text-ink-faint hover:text-ink"
                 >
@@ -238,14 +239,18 @@ export default function Onboarding() {
                     </div>
                   </>
                 )}
-                <button
-                  onClick={() => finish(false)}
-                  className="w-full rounded-xl border border-edge bg-panel py-3 text-sm font-bold text-ink-dim hover:bg-card-hover transition"
-                >
-                  Continue without an account
-                </button>
+                {!isSupabaseConfigured() && (
+                  <button
+                    onClick={() => finish(false)}
+                    className="w-full rounded-xl border border-edge bg-panel py-3 text-sm font-bold text-ink-dim hover:bg-card-hover transition"
+                  >
+                    Continue without an account
+                  </button>
+                )}
                 <p className="mt-3 text-center text-xs text-ink-faint">
-                  Without an account, your notes stay on this device only.
+                  {isSupabaseConfigured()
+                    ? "A free account keeps your notes synced across devices."
+                    : "Without an account, your notes stay on this device only."}
                 </p>
               </>
             )}

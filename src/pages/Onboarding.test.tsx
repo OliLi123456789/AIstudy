@@ -10,8 +10,10 @@ import Onboarding from "./Onboarding";
 
 afterEach(() => cleanup());
 
+const supabaseMock = vi.hoisted(() => ({ configured: true }));
+
 vi.mock("../lib/supabase", () => ({
-  isSupabaseConfigured: () => true,
+  isSupabaseConfigured: () => supabaseMock.configured,
   getSupabase: () => ({
     auth: {
       getSession: async () => ({ data: { session: null }, error: null }),
@@ -50,10 +52,19 @@ describe("Onboarding landing page", () => {
   });
 
   it("shows sign-up form and the local-only fallback when Supabase is configured", async () => {
+    supabaseMock.configured = true;
     renderLanding();
     expect(await screen.findByText("Create free account")).toBeTruthy();
     expect(screen.getByPlaceholderText("Email")).toBeTruthy();
     expect(screen.getByPlaceholderText("Password")).toBeTruthy();
-    expect(screen.getByText("Continue without an account")).toBeTruthy();
+    // Accounts are required when Supabase is configured — no local-only path.
+    expect(screen.queryByText("Continue without an account")).toBeNull();
+  });
+
+  it("offers the local-only path when Supabase is not configured", async () => {
+    supabaseMock.configured = false;
+    renderLanding();
+    expect(await screen.findByText("Continue without an account")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Email")).toBeNull();
   });
 });
