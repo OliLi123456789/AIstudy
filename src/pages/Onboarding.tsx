@@ -127,9 +127,6 @@ export default function Onboarding() {
             <PenLine className="size-7 text-accent" />
             <span className="font-display text-2xl font-bold tracking-tight">AIstudy</span>
           </div>
-          <span className="rounded-full bg-accent-softer px-3 py-1.5 text-xs font-bold text-accent">
-            100% free · unlimited
-          </span>
         </header>
 
         {/* Hero */}

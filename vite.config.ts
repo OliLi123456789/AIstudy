@@ -23,7 +23,20 @@ function localApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), localApi()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    localApi(),
+    {
+      name: "adsense-client",
+      transformIndexHtml(html) {
+        return html.replace(
+          "%VITE_ADSENSE_CLIENT%",
+          process.env.VITE_ADSENSE_CLIENT || "ca-pub-0000000000000000",
+        );
+      },
+    },
+  ],
   server: {
     proxy: {
       "/api": { target: "http://127.0.0.1:4179", changeOrigin: true },
