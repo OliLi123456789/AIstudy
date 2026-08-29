@@ -1,0 +1,4 @@
+# Google AdSense seller declaration
+# If your AdSense dashboard shows a longer line (with a third field), replace
+# the line below with the exact line AdSense gives you.
+google.com, pub-2169480693466109, DIRECT
