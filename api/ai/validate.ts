@@ -34,3 +34,6 @@ export async function POST(req: Request): Promise<Response> {
   if (!key) return json({ ok: false, error: "AI provider is not configured." }, 503);
   return json({ ok: true, provider: "deepseek" });
 }
+
+/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+export const config = { runtime: "nodejs" };

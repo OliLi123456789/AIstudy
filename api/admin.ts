@@ -214,3 +214,6 @@ function detectProviderFromKey(k: string): string | null {
   if (k.startsWith("sk-")) return "openai";
   return null;
 }
+
+/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+export const config = { runtime: "nodejs" };

@@ -272,3 +272,6 @@ export async function POST(req: Request): Promise<Response> {
   });
 }
 
+/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+export const config = { runtime: "nodejs" };
+

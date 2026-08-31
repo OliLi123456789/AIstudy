@@ -20,3 +20,6 @@ export async function POST(): Promise<Response> {
     headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
 }
+
+/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+export const config = { runtime: "nodejs" };
