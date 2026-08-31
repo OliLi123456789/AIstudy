@@ -3,7 +3,23 @@
  * yet — this token exists purely so the server can throttle/quota abuse and
  * so the DeepSeek key never reaches the browser. */
 
-import { signToken, tokenSecret, hasSecureSecret } from "../../shared/server/tokens.mjs";
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const b64url = (buf: Buffer | string): string => Buffer.from(buf).toString("base64url");
+
+function signToken(payload: Record<string, unknown>, secret: string, ttlSeconds = 60 * 60 * 24 * 30): string {
+  const body = b64url(JSON.stringify({ ...payload, exp: Date.now() + ttlSeconds * 1000 }));
+  const sig = createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function tokenSecret(): string {
+  return process.env.TOKEN_SECRET || process.env.ADMIN_PASSWORD || "local-dev-insecure-secret";
+}
+
+function hasSecureSecret(): boolean {
+  return Boolean(process.env.TOKEN_SECRET || process.env.ADMIN_PASSWORD);
+}
 
 export async function POST(): Promise<Response> {
   if (process.env.NODE_ENV === "production" && !hasSecureSecret()) {
@@ -21,5 +37,5 @@ export async function POST(): Promise<Response> {
   });
 }
 
-/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+/* Node.js runtime is required (uses node:crypto). */
 export const config = { runtime: "nodejs" };

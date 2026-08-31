@@ -21,8 +21,8 @@ import {
   secureEqual,
   maskKey,
   tokenSecret,
-} from "../shared/server/tokens.mjs";
-import { verifySupabaseJwt } from "../shared/server/supabase-jwt.mjs";
+} from "../shared/tokens.mjs";
+import { verifySupabaseJwt } from "../shared/supabase-jwt.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 4179;

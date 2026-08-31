@@ -15,13 +15,47 @@
  */
 
 import { kv } from "@vercel/kv";
-import {
-  signToken,
-  verifyToken,
-  secureEqual,
-  maskKey,
-  tokenSecret,
-} from "../../shared/server/tokens.mjs";
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const b64url = (buf: Buffer | string): string => Buffer.from(buf).toString("base64url");
+
+function signToken(payload: Record<string, unknown>, secret: string, ttlSeconds = 60 * 60 * 24 * 30): string {
+  const body = b64url(JSON.stringify({ ...payload, exp: Date.now() + ttlSeconds * 1000 }));
+  const sig = createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+function verifyToken(token: string | null | undefined, secret: string): Record<string, unknown> | null {
+  try {
+    const [body, sig] = String(token).split(".");
+    if (!body || !sig) return null;
+    const expected = createHmac("sha256", secret).update(body).digest("base64url");
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (typeof payload.exp !== "number" || Date.now() > payload.exp) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function secureEqual(a: unknown, b: unknown): boolean {
+  const ha = createHmac("sha256", "aistudy:eq").update(String(a ?? "")).digest();
+  const hb = createHmac("sha256", "aistudy:eq").update(String(b ?? "")).digest();
+  return timingSafeEqual(ha, hb);
+}
+
+function maskKey(key: string): string {
+  if (!key) return "";
+  if (key.length <= 8) return "••••••••";
+  return `${key.slice(0, 3)}…${key.slice(-4)}`;
+}
+
+function tokenSecret(): string {
+  return process.env.TOKEN_SECRET || process.env.ADMIN_PASSWORD || "local-dev-insecure-secret";
+}
 
 const KV_KEY = "aistudy:api_key";
 const KV_PROVIDER = "aistudy:api_provider";
@@ -215,5 +249,5 @@ function detectProviderFromKey(k: string): string | null {
   return null;
 }
 
-/* Node.js runtime is required (shared/server/tokens.mjs uses node:crypto). */
+/* Node.js runtime is required (shared/tokens.mjs uses node:crypto). */
 export const config = { runtime: "nodejs" };
