@@ -226,7 +226,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // Body + shape validation.
-  let body: { model?: string; messages?: unknown[] };
+  let body: { model?: string; messages?: unknown[]; stream?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -279,13 +279,13 @@ export async function POST(req: Request): Promise<Response> {
     return json({ error: "only DeepSeek is supported through the proxy." }, 400);
   }
 
-  // Forward to DeepSeek (stream forced on).
-  const upstreamBody = {
-    ...body,
-    model,
-    stream: true,
-    stream_options: { include_usage: true },
-  };
+  // Forward to DeepSeek. Streaming is the default, but structured-output
+  // requests (flashcards/quiz generation) are sent with stream:false and
+  // expect a plain JSON body back — honor that instead of forcing SSE.
+  const wantStream = body.stream !== false;
+  const upstreamBody = wantStream
+    ? { ...body, model, stream: true, stream_options: { include_usage: true } }
+    : { ...body, model, stream: false };
   const estInputTokens = Math.max(1, Math.ceil(requestChars / 4));
   let upstream: Response;
   try {
@@ -306,6 +306,28 @@ export async function POST(req: Request): Promise<Response> {
     // Pass the upstream error through unchanged.
     return new Response(upstream.body ?? JSON.stringify({ error: "upstream error" }), {
       status: upstream.status,
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
+    });
+  }
+
+  if (!wantStream) {
+    // Non-streaming: read the complete JSON response, record usage, return as-is.
+    let data: any;
+    try {
+      data = await upstream.json();
+    } catch (err) {
+      console.error("upstream non-stream parse failed", err);
+      return json({ error: "upstream returned an unreadable response" }, 502);
+    }
+    const promptTokens = Number(data?.usage?.prompt_tokens) || estInputTokens;
+    const completionTokens = Number(data?.usage?.completion_tokens) || 1;
+    const costUsd = promptTokens * INPUT_USD_PER_TOKEN + completionTokens * OUTPUT_USD_PER_TOKEN;
+    void addCounter(`tokens:${clientDay}`, promptTokens + completionTokens);
+    void addCounter(`spend:${dayKey()}`, Math.max(1, Math.round(costUsd * 1e6)));
+    if (supabaseUserId) {
+      void recordSupabaseUsage(supabaseUserId, promptTokens, completionTokens);
+    }
+    return new Response(JSON.stringify(data), {
       headers: { "content-type": "application/json", "cache-control": "no-store" },
     });
   }
