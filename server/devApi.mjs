@@ -17,7 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 
-const { createHmac, timingSafeEqual, createPublicKey, verify: cryptoVerify } = crypto;
+const { createHmac, timingSafeEqual, createPublicKey, createVerify, verify: cryptoVerify } = crypto;
 const b64url = (buf) => Buffer.from(buf).toString("base64url");
 
 function tokenSecret() {
@@ -63,7 +63,7 @@ let jwksCache = null;
 let jwksCacheUrl = "";
 
 async function verifySupabaseJwt(token) {
-  const base = process.env.SUPABASE_URL;
+  const base = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   if (!base || !token) return null;
   const parts = String(token).split(".");
   if (parts.length !== 3) return null;
@@ -73,7 +73,8 @@ async function verifySupabaseJwt(token) {
   } catch {
     return null;
   }
-  if (header.alg !== "RS256" || !header.kid) return null;
+  // Supabase signs with RS256 (older projects) or ES256 (newer projects).
+  if ((header.alg !== "RS256" && header.alg !== "ES256") || !header.kid) return null;
   const jwksUrl = `${base.replace(/\/$/, "")}/auth/v1/.well-known/jwks.json`;
   if (!jwksCache || jwksCacheUrl !== jwksUrl) {
     try {
@@ -90,12 +91,18 @@ async function verifySupabaseJwt(token) {
   let signatureOk = false;
   try {
     const pub = createPublicKey({ key: jwk, format: "jwk" });
-    signatureOk = cryptoVerify(
-      "RSA-SHA256",
-      Buffer.from(`${parts[0]}.${parts[1]}`),
-      pub,
-      Buffer.from(parts[2], "base64url"),
-    );
+    const data = Buffer.from(`${parts[0]}.${parts[1]}`);
+    const sig = Buffer.from(parts[2], "base64url");
+    if (header.alg === "RS256") {
+      signatureOk = cryptoVerify("RSA-SHA256", data, pub, sig);
+    } else {
+      // ES256: P-256 ECDSA with a raw IEEE P1363 signature. The one-shot
+      // cryptoVerify() can't take dsaEncoding, so go through createVerify.
+      const verifier = createVerify("SHA256");
+      verifier.update(data);
+      verifier.end();
+      signatureOk = verifier.verify({ key: pub, dsaEncoding: "ieee-p1363" }, sig);
+    }
   } catch {
     return null;
   }

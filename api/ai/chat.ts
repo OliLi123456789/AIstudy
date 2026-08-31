@@ -13,7 +13,7 @@
  */
 
 import { kv } from "@vercel/kv";
-import { createHmac, timingSafeEqual, createPublicKey, verify as cryptoVerify } from "node:crypto";
+import { createHmac, timingSafeEqual, createPublicKey, createVerify, verify as cryptoVerify } from "node:crypto";
 
 const b64url = (buf: Buffer | string): string => Buffer.from(buf).toString("base64url");
 
@@ -45,7 +45,7 @@ let jwksCache: { keys?: Array<{ kid?: string }> } | null = null;
 let jwksCacheUrl = "";
 
 async function verifySupabaseJwt(token: string | null | undefined): Promise<Record<string, unknown> | null> {
-  const base = process.env.SUPABASE_URL;
+  const base = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   if (!base || !token) return null;
   const parts = String(token).split(".");
   if (parts.length !== 3) return null;
@@ -55,7 +55,8 @@ async function verifySupabaseJwt(token: string | null | undefined): Promise<Reco
   } catch {
     return null;
   }
-  if (header.alg !== "RS256" || !header.kid) return null;
+  // Supabase signs with RS256 (older projects) or ES256 (newer projects).
+  if ((header.alg !== "RS256" && header.alg !== "ES256") || !header.kid) return null;
   const jwksUrl = `${base.replace(/\/$/, "")}/auth/v1/.well-known/jwks.json`;
   if (!jwksCache || jwksCacheUrl !== jwksUrl) {
     try {
@@ -72,12 +73,18 @@ async function verifySupabaseJwt(token: string | null | undefined): Promise<Reco
   let signatureOk = false;
   try {
     const pub = createPublicKey({ key: jwk, format: "jwk" });
-    signatureOk = cryptoVerify(
-      "RSA-SHA256",
-      Buffer.from(`${parts[0]}.${parts[1]}`),
-      pub,
-      Buffer.from(parts[2], "base64url"),
-    );
+    const data = Buffer.from(`${parts[0]}.${parts[1]}`);
+    const sig = Buffer.from(parts[2], "base64url");
+    if (header.alg === "RS256") {
+      signatureOk = cryptoVerify("RSA-SHA256", data, pub, sig);
+    } else {
+      // ES256: P-256 ECDSA with a raw IEEE P1363 signature. The one-shot
+      // cryptoVerify() can't take dsaEncoding, so go through createVerify.
+      const verifier = createVerify("SHA256");
+      verifier.update(data);
+      verifier.end();
+      signatureOk = verifier.verify({ key: pub, dsaEncoding: "ieee-p1363" }, sig);
+    }
   } catch {
     return null;
   }
@@ -162,7 +169,7 @@ async function recordSupabaseUsage(
   inputTokens: number,
   outputTokens: number,
 ): Promise<void> {
-  const url = process.env.SUPABASE_URL;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return;
   try {
