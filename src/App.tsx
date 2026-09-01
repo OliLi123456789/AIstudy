@@ -58,7 +58,10 @@ export default function App() {
         </Routes>
       </div>
       {!hideRail && (
-        <aside className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-edge bg-panel p-4 xl:flex">
+        <aside
+          key={location.key}
+          className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-edge bg-panel p-4 xl:flex"
+        >
           <HilltopBanner />
         </aside>
       )}

@@ -34,6 +34,8 @@ export default function HilltopBanner() {
     if (!root) return;
 
     // Clear any previous creatives, then inject a fresh loader per zone.
+    // Keyed on location.key (not pathname) so every navigation — including
+    // going into/out of a study set and back/forward — refreshes the ads.
     root.innerHTML = "";
     for (const src of ZONES) {
       const container = document.createElement("div");
@@ -45,7 +47,7 @@ export default function HilltopBanner() {
     return () => {
       root.innerHTML = "";
     };
-  }, [location.pathname]);
+  }, [location.key]);
 
   return <div ref={rootRef} className="flex w-full flex-col gap-4" />;
 }
