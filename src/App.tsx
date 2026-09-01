@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AppShell from "./components/AppShell";
+import HilltopBanner from "./components/HilltopBanner";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NoteView from "./pages/NoteView";
@@ -31,22 +32,36 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
+  // Right rail with the HilltopAds banner on every page except the auth
+  // callback and internal admin routes.
+  const hideRail =
+    location.pathname === "/auth/callback" || location.pathname.startsWith("/admin");
+
   return (
-    <Routes>
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route element={<AppShell />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/essay" element={<EssayReview />} />
-        {CANVAS_ENABLED && <Route path="/canvas" element={<CanvasBrowse />} />}
-        <Route path="/planner" element={<Planner />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
-      <Route path="/folder/:folderId" element={<FolderView />} />
-      <Route path="/notes/:id" element={<Navigate to="editor" replace />} />
-      <Route path="/notes/:id/:view" element={<NoteView />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <div className="flex h-full bg-bg">
+      <div className="min-w-0 flex-1">
+        <Routes>
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route element={<AppShell />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/essay" element={<EssayReview />} />
+            {CANVAS_ENABLED && <Route path="/canvas" element={<CanvasBrowse />} />}
+            <Route path="/planner" element={<Planner />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+          <Route path="/folder/:folderId" element={<FolderView />} />
+          <Route path="/notes/:id" element={<Navigate to="editor" replace />} />
+          <Route path="/notes/:id/:view" element={<NoteView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+      {!hideRail && (
+        <aside className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-edge bg-panel p-4 xl:flex">
+          <HilltopBanner />
+        </aside>
+      )}
+    </div>
   );
 }
