@@ -17,6 +17,7 @@ import { useApp } from "../lib/app";
 import { CANVAS_ENABLED } from "../lib/features";
 import { getSupabase } from "../lib/supabase";
 import { getEnginePrefs } from "../lib/prefs";
+import HilltopBanner from "./HilltopBanner";
 
 const navItems = [
   { to: "/", label: "My Studies", icon: Home },
@@ -132,6 +133,11 @@ export default function AppShell() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <Outlet />
       </main>
+
+      {/* Right rail — HilltopAds banner (large screens only) */}
+      <aside className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-edge bg-panel p-4 xl:flex">
+        <HilltopBanner />
+      </aside>
     </div>
   );
 }
