@@ -9,7 +9,6 @@ import Onboarding from "./pages/Onboarding";
 import AuthCallback from "./pages/AuthCallback";
 import Admin from "./pages/Admin";
 import CanvasBrowse from "./pages/CanvasBrowse";
-import EssayReview from "./pages/EssayReview";
 import FolderView from "./pages/FolderView";
 import Planner from "./pages/Planner";
 import { useApp } from "./lib/app";
@@ -48,7 +47,6 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route element={<AppShell />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/essay" element={<EssayReview />} />
             {CANVAS_ENABLED && <Route path="/canvas" element={<CanvasBrowse />} />}
             <Route path="/planner" element={<Planner />} />
             <Route path="/settings" element={<Settings />} />

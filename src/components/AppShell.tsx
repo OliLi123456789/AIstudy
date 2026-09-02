@@ -4,7 +4,6 @@ import {
   CalendarDays,
   ChevronsLeft,
   ChevronsRight,
-  ClipboardCheck,
   GraduationCap,
   Home,
   LogOut,
@@ -21,7 +20,6 @@ import { getEnginePrefs } from "../lib/prefs";
 const navItems = [
   { to: "/", label: "My Studies", icon: Home },
   { to: "/planner", label: "Planner", icon: CalendarDays },
-  { to: "/essay", label: "Essay Review", icon: ClipboardCheck },
   { to: "/canvas", label: "Canvas", icon: GraduationCap, canvasOnly: true },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
