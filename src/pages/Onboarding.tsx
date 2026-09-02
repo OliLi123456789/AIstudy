@@ -3,7 +3,7 @@
    "continue without an account" path that keeps the app local-first. */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import type { User } from "@supabase/supabase-js";
 import {
   Brain,
@@ -44,7 +44,6 @@ const FEATURES = [
 ];
 
 export default function Onboarding() {
-  const navigate = useNavigate();
   const { savePrefs, repo } = useApp();
   const [mode, setMode] = useState<"signin" | "signup">("signup");
   const [email, setEmail] = useState("");
@@ -77,7 +76,7 @@ export default function Onboarding() {
       const sb = getSupabase();
       if (sb) syncWithSupabase(repo, sb).catch(() => {});
     }
-    navigate("/", { replace: true });
+    hardNav("/", true);
   }
 
   async function submit() {

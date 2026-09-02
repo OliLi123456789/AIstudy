@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   AlertCircle,
   Download,
@@ -199,12 +198,12 @@ export default function PodcastPanel({ note }: { note: Note }) {
 
             {!engine && (
               <p className="text-sm text-ink-faint">
-                <Link
-                  to="/settings"
+                <a
+                  href="/settings"
                   className="font-semibold text-accent hover:underline"
                 >
                   Set up your engine in Settings
-                </Link>{" "}
+                </a>{" "}
                 first.
               </p>
             )}

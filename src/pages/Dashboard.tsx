@@ -1,7 +1,7 @@
 /* Dashboard — "My Study Spaces" grid with folders and single docs side-by-side. */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import {
   CalendarClock,
   FilePlus2,
@@ -37,7 +37,6 @@ function relTime(ms: number): string {
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
   const { repo, engine, prefs, version, bump } = useApp();
   const [modal, setModal] = useState<NoteSource | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -89,7 +88,7 @@ export default function Dashboard() {
     };
     await repo.putNote(note);
     bump();
-    navigate(`/notes/${note.id}/editor`);
+    hardNav(`/notes/${note.id}/editor`);
   }
 
   async function handleGenerate(inputs: IngestInput[]) {
@@ -98,7 +97,7 @@ export default function Dashboard() {
     try {
       const id = await createNoteFromSources({ repo, engine, inputs, language: prefs.language, onProgress: setJob });
       setModal(null); setJob(null); bump();
-      navigate(`/notes/${id}/editor`);
+      hardNav(`/notes/${id}/editor`);
     } catch (e) {
       setJob(null); setModal(null);
       setErr(e instanceof Error ? e.message : "Generation failed.");
@@ -168,7 +167,7 @@ export default function Dashboard() {
           <span className="text-xs text-ink-faint">Import from any URL</span>
         </button>
         {CANVAS_ENABLED && (prefs.canvasToken && prefs.canvasUrl) && (
-          <button onClick={() => navigate("/canvas")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
+          <button onClick={() => hardNav("/canvas")} className="flex flex-col items-center gap-3 rounded-card border border-edge bg-card p-5 hover:bg-card-hover hover:border-accent/30 transition shadow-soft">
             <GraduationCap className="size-8 text-accent" />
             <span className="font-display text-sm font-bold">Canvas Import</span>
             <span className="text-xs text-ink-faint">From your LMS</span>
@@ -192,7 +191,7 @@ export default function Dashboard() {
                 <h2 className="flex items-center gap-2 font-display text-base font-bold">
                   <CalendarClock className="size-4 text-accent" /> Upcoming Deadlines
                 </h2>
-                <button onClick={() => navigate("/planner")} className="text-xs font-semibold text-accent hover:underline">
+                <button onClick={() => hardNav("/planner")} className="text-xs font-semibold text-accent hover:underline">
                   Open planner →
                 </button>
               </div>
@@ -221,7 +220,7 @@ export default function Dashboard() {
                 <h2 className="flex items-center gap-2 font-display text-base font-bold">
                   <CalendarClock className="size-4 text-accent" /> Today's Study Plan
                 </h2>
-                <button onClick={() => navigate("/planner")} className="text-xs font-semibold text-accent hover:underline">
+                <button onClick={() => hardNav("/planner")} className="text-xs font-semibold text-accent hover:underline">
                   Edit schedule →
                 </button>
               </div>
@@ -253,7 +252,7 @@ export default function Dashboard() {
             const count = notes.filter((n) => n.folderId === f.id).length;
             return (
               <div key={f.id} className="group relative">
-                <button onClick={() => navigate(`/folder/${f.id}`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover hover:border-accent/30">
+                <button onClick={() => hardNav(`/folder/${f.id}`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover hover:border-accent/30">
                   <FolderOpen className="size-12 text-accent" />
                   <span className="font-display text-sm font-bold text-center line-clamp-2">{f.name}</span>
                   <span className="text-xs text-ink-faint">{count} {count === 1 ? "doc" : "docs"}</span>
@@ -266,7 +265,7 @@ export default function Dashboard() {
           })}
           {notes.map((n) => (
             <div key={n.id} className="group relative">
-              <button onClick={() => navigate(`/notes/${n.id}/editor`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover">
+              <button onClick={() => hardNav(`/notes/${n.id}/editor`)} className="flex w-full flex-col items-center gap-2 rounded-card border border-edge bg-card p-5 shadow-soft transition hover:bg-card-hover">
                 <FileText className="size-12 text-ink-dim" />
                 <span className="font-display text-sm font-bold text-center line-clamp-2">{n.title}</span>
                 <span className="text-xs text-ink-faint">{relTime(n.lastOpenedAt)}</span>

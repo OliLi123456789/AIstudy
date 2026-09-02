@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import {
   CalendarDays,
   ChevronsLeft,
@@ -28,6 +28,7 @@ const navItems = [
 
 export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
   const { prefs, savePrefs } = useApp();
   const [signedIn, setSignedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -83,23 +84,23 @@ export default function AppShell() {
         </div>
 
         <nav className="flex flex-col gap-1 px-3">
-          {visibleItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${
+          {visibleItems.map(({ to, label, icon: Icon }) => {
+            const isActive = to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+            return (
+              <a
+                key={to}
+                href={to}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${
                   isActive
                     ? "bg-card-hover text-ink"
                     : "text-ink-dim hover:bg-card-hover hover:text-ink"
-                }`
-              }
-            >
-              <Icon className="size-4.5 shrink-0" />
-              {!collapsed && label}
-            </NavLink>
-          ))}
+                }`}
+              >
+                <Icon className="size-4.5 shrink-0" />
+                {!collapsed && label}
+              </a>
+            );
+          })}
         </nav>
 
         <div className="mt-auto flex flex-col gap-1 px-3 pb-4">

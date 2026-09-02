@@ -1,7 +1,7 @@
 /* Canvas LMS browser — browse courses and import content as study notes. */
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import {
   BookOpen,
   FileText,
@@ -16,7 +16,6 @@ import { createNoteFromSources } from "../lib/generation/pipeline";
 type Tab = "courses" | "assignments" | "files";
 
 export default function CanvasBrowse() {
-  const navigate = useNavigate();
   const { repo, engine, prefs, bump } = useApp();
   const [tab, setTab] = useState<Tab>("courses");
   const [courses, setCourses] = useState<CanvasCourse[]>([]);
@@ -87,7 +86,7 @@ export default function CanvasBrowse() {
         language: prefs.language,
       });
       bump();
-      navigate(`/notes/${id}/editor`);
+      hardNav(`/notes/${id}/editor`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Import failed");
       setGenerating(false);
@@ -103,7 +102,7 @@ export default function CanvasBrowse() {
           Add your Canvas URL and access token in Settings to browse your courses and import content.
         </p>
         <button
-          onClick={() => navigate("/settings")}
+          onClick={() => hardNav("/settings")}
           className="mt-4 rounded-xl bg-accent px-6 py-2.5 text-sm font-bold text-white hover:bg-accent-hover"
         >
           Open Settings

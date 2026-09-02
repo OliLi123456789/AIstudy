@@ -35,7 +35,9 @@ export default function App() {
   // Right rail with the HilltopAds banner on every page except the auth
   // callback and internal admin routes.
   const hideRail =
-    location.pathname === "/auth/callback" || location.pathname.startsWith("/admin");
+    location.pathname === "/onboarding" ||
+    location.pathname === "/auth/callback" ||
+    location.pathname.startsWith("/admin");
 
   return (
     <div className="flex h-full bg-bg">

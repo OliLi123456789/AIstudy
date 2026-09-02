@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { Brain, CheckCircle, Layers, ListChecks, Loader2, Target, TrendingUp } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import { useApp } from "../lib/app";
 import { generateQuiz } from "../lib/generation";
 import type { Flashcard, Note, QuizAttempt, QuizQuestion } from "../lib/types";
@@ -27,7 +27,6 @@ function KpiCard({ icon: Icon, value, label, color }: { icon: typeof Brain; valu
 
 export default function ProgressView({ note }: { note: Note }) {
   const { repo, engine } = useApp();
-  const navigate = useNavigate();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -77,7 +76,7 @@ export default function ProgressView({ note }: { note: Note }) {
     try {
       const qs = await generateQuiz(engine, note, { count: 8, difficulty: "intermediate" });
       if (qs.length > 0) await repo.putQuestions(qs);
-      navigate(`/notes/${note.id}/quiz`);
+      hardNav(`/notes/${note.id}/quiz`);
     } catch {} finally { setGenQuizOnWeak(false); }
   }
 

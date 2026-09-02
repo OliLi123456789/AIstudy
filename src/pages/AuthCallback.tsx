@@ -4,13 +4,11 @@
  * app (the auth gate in AppProvider marks them onboarded). */
 
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import { Loader2, MailCheck } from "lucide-react";
 import { getSupabase } from "../lib/supabase";
 
 export default function AuthCallback() {
-  const navigate = useNavigate();
-
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -18,12 +16,12 @@ export default function AuthCallback() {
       if (sb) {
         await sb.auth.getSession().catch(() => {});
       }
-      if (alive) navigate("/", { replace: true });
+      if (alive) hardNav("/", true);
     })();
     return () => {
       alive = false;
     };
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-bg px-6">

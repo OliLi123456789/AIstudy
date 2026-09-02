@@ -2,7 +2,8 @@
    in the folder. Uses the first note as anchor for storage. */
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import {
   ArrowLeft,
   BarChart3,
@@ -46,7 +47,6 @@ const railViews = [
 
 export default function FolderView() {
   const { folderId } = useParams();
-  const navigate = useNavigate();
   const { repo, engine, prefs, bump } = useApp();
   const [folder, setFolder] = useState<Folder | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -137,7 +137,7 @@ export default function FolderView() {
             {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
           </button>
         </div>
-        <button onClick={() => navigate("/")} className="mx-3 mb-4 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-ink-faint hover:text-ink transition">
+        <button onClick={() => hardNav("/")} className="mx-3 mb-4 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-ink-faint hover:text-ink transition">
           <ArrowLeft className="size-3.5" /> {!collapsed && "Back"}
         </button>
         <nav className="flex flex-col gap-1 px-2">
@@ -168,7 +168,7 @@ export default function FolderView() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         {!FOLDER_STUDY_ENABLED && (
           <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-edge bg-panel/95 px-6 py-3 backdrop-blur">
-            <button onClick={() => navigate("/")} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-ink-faint hover:text-ink transition">
+            <button onClick={() => hardNav("/")} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-ink-faint hover:text-ink transition">
               <ArrowLeft className="size-4" /> Back
             </button>
             <span className="font-display text-sm font-bold truncate">{folder.name}</span>
@@ -194,9 +194,9 @@ export default function FolderView() {
             onBlank={async () => {
               if (!repo || !folderId) return;
               const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
-              await repo.putNote(note); bump(); navigate(`/notes/${note.id}/editor`);
+              await repo.putNote(note); bump(); hardNav(`/notes/${note.id}/editor`);
             }}
-            onOpenNote={(id) => navigate(`/notes/${id}/editor`)}
+            onOpenNote={(id) => hardNav(`/notes/${id}/editor`)}
           />
         )}
 

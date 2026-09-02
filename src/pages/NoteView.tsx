@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
+import { hardNav } from "../lib/hardnav";
 import {
   ClipboardList,
   Download,
@@ -42,7 +43,7 @@ const railViews = [
 
 export default function NoteView() {
   const { id, view = "editor" } = useParams();
-  const navigate = useNavigate();
+  const location = useLocation();
   const { repo, engine } = useApp();
   const [note, setNote] = useState<Note | null>(null);
   const [missing, setMissing] = useState(false);
@@ -74,14 +75,14 @@ export default function NoteView() {
   }, [repo, id]);
 
   useEffect(() => {
-    if (missing) navigate("/", { replace: true });
-  }, [missing, navigate]);
+    if (missing) hardNav("/", true);
+  }, [missing]);
 
   return (
     <div className="flex h-full bg-bg">
       <aside className="flex w-16 shrink-0 flex-col items-center border-r border-edge bg-panel py-4">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => hardNav("/")}
           className="rounded-lg p-2 text-ink-dim hover:bg-card-hover hover:text-ink"
           aria-label="Back to dashboard"
         >
@@ -89,20 +90,18 @@ export default function NoteView() {
         </button>
         <nav className="mt-6 flex flex-col gap-2">
           {railViews.map(({ view: v, icon: Icon, label }) => (
-            <NavLink
+            <a
               key={v}
-              to={`/notes/${id}/${v}`}
+              href={`/notes/${id}/${v}`}
               title={label}
-              className={({ isActive }) =>
-                `rounded-xl p-2.5 ${
-                  isActive
-                    ? "bg-card text-ink shadow-soft"
-                    : "text-ink-dim hover:bg-card-hover hover:text-ink"
-                }`
-              }
+              className={`rounded-xl p-2.5 ${
+                location.pathname === `/notes/${id}/${v}`
+                  ? "bg-card text-ink shadow-soft"
+                  : "text-ink-dim hover:bg-card-hover hover:text-ink"
+              }`}
             >
               <Icon className="size-5" />
-            </NavLink>
+            </a>
           ))}
         </nav>
         <div className="mt-4 flex flex-col items-center gap-2 border-t border-edge pt-4">
@@ -200,7 +199,7 @@ export default function NoteView() {
                     }));
                     if (mcqQuestions.length > 0) await repo.putQuestions(mcqQuestions);
                     setShowTestConfig(false);
-                    navigate(`/notes/${note.id}/quiz`);
+                    hardNav(`/notes/${note.id}/quiz`);
                   } catch { /* silently fail */ }
                   finally { setTestGenerating(false); }
                 }} disabled={testMcq + testFrq + testEssay === 0 || testGenerating}
