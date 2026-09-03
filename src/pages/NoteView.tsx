@@ -184,7 +184,7 @@ export default function NoteView() {
                       className="mt-1 w-full rounded-lg border border-edge bg-panel py-1.5 text-center text-sm font-bold outline-none" />
                   </div>
                 </div>
-                <p className="text-xs text-ink-faint text-center">Total: {testMcq + testFrq + testEssay} questions · ~$0.01</p>
+                <p className="text-xs text-ink-faint text-center">Total: {testMcq + testFrq + testEssay} questions</p>
                 <button onClick={async () => {
                   if (!repo || !engine || testMcq + testFrq + testEssay === 0) return;
                   setTestGenerating(true);

@@ -181,8 +181,6 @@ export default function Assistant({
             <span title="Input tokens">in: {tokenStats.input.toLocaleString()}</span>
             <span className="mx-2 opacity-30">|</span>
             <span title="Output tokens">out: {tokenStats.output.toLocaleString()}</span>
-            <span className="mx-2 opacity-30">|</span>
-            <span title="Est. cost (cache-hit pricing)">${((tokenStats.cacheMisses * 0.14 + tokenStats.cacheHits * 0.0028 + tokenStats.output * 0.28) / 1_000_000).toFixed(6)}</span>
           </div>
         </>
       )}

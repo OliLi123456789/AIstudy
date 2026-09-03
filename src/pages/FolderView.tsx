@@ -230,7 +230,7 @@ export default function FolderView() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-ink-faint text-center">Total: {testMcq + testFrq + testEssay} questions · ~$0.01</p>
+              <p className="text-xs text-ink-faint text-center">Total: {testMcq + testFrq + testEssay} questions</p>
               <button onClick={generateTest} disabled={testMcq + testFrq + testEssay === 0 || studying} className="w-full rounded-xl bg-accent py-3 font-display font-bold text-white hover:bg-accent-hover disabled:opacity-50">Generate Test</button>
             </div>
           </div>
