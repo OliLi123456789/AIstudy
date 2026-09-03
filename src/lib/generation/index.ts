@@ -20,8 +20,8 @@ import {
   essayResultSchema,
   essaySystem,
   essayUser,
-  flashcardsSchema,
-  flashcardsSystem,
+  flashcardsCombinedSchema,
+  flashcardsTask,
   noteReduceSystem,
   noteSectionSystem,
   noteSystem,
@@ -30,10 +30,10 @@ import {
   podcastSystem,
   quizSchema,
   quizSystem,
+  studyJsonSystem,
+  studyUser,
   titleSystem,
   titleUser,
-  topicsSchema,
-  topicsSystem,
   practiceTestSchema,
   practiceTestSystem,
 } from "../prompts";
@@ -138,6 +138,21 @@ export async function generateTitle(
   return cleanTitle(t);
 }
 
+/* Pull the title out of a generated note: the model is asked to open with a
+   level-1 heading. Extract it and return the remaining blocks. Returns null
+   when no heading was produced (caller falls back to the title call). */
+export function extractTitleFromBlocks(
+  blocks: Block[],
+): { title: string; blocks: Block[] } | null {
+  const idx = blocks.findIndex((b) => b.type === "heading1");
+  if (idx === -1) return null;
+  const title = cleanTitle(blocks[idx].text);
+  return {
+    title,
+    blocks: [...blocks.slice(0, idx), ...blocks.slice(idx + 1)],
+  };
+}
+
 /* ---- Flashcards (two-phase: topics, then cards) ------------------------- */
 
 export async function generateFlashcards(
@@ -145,21 +160,16 @@ export async function generateFlashcards(
   note: Note,
 ): Promise<Flashcard[]> {
   const content = studyContent(note);
-  const { topics } = await engine.structured<{ topics: string[] }>({
-    system: topicsSystem,
-    messages: [{ role: "user", content }],
-    schema: topicsSchema as unknown as Record<string, unknown>,
-    schemaName: "topics",
-    tier: "fast",
-  });
   const { cards } = await engine.structured<{
+    topics: string[];
     cards: { front: string; back: string; topic: string }[];
   }>({
-    system: flashcardsSystem(topics.length ? topics : ["General"]),
-    messages: [{ role: "user", content }],
-    schema: flashcardsSchema as unknown as Record<string, unknown>,
+    system: studyJsonSystem,
+    messages: [{ role: "user", content: studyUser(content, flashcardsTask) }],
+    schema: flashcardsCombinedSchema as unknown as Record<string, unknown>,
     schemaName: "flashcards",
     tier: "strong",
+    maxTokens: 3000,
   });
   return cards.map((c) => ({
     id: uuid(),
@@ -191,8 +201,10 @@ export async function generateQuiz(
   const { questions } = await engine.structured<{
     questions: Omit<QuizQuestion, "id" | "noteId">[];
   }>({
-    system: quizSystem({ count, difficulty, types }),
-    messages: [{ role: "user", content }],
+    system: studyJsonSystem,
+    messages: [
+      { role: "user", content: studyUser(content, quizSystem({ count, difficulty, types })) },
+    ],
     schema: quizSchema as unknown as Record<string, unknown>,
     schemaName: "quiz",
     tier: "strong",
@@ -235,8 +247,8 @@ export async function generatePodcastScript(
   const { lines } = await engine.structured<{
     lines: { speaker: "host" | "guest"; text: string; spoken: string }[];
   }>({
-    system: podcastSystem(length),
-    messages: [{ role: "user", content }],
+    system: studyJsonSystem,
+    messages: [{ role: "user", content: studyUser(content, podcastSystem(length)) }],
     schema: podcastSchema as unknown as Record<string, unknown>,
     schemaName: "podcast",
     tier: "strong",
@@ -284,21 +296,16 @@ export async function generateMultiDocFlashcards(
 ): Promise<Flashcard[]> {
   if (notes.length === 0) return [];
   const content = multiDocContent(notes);
-  const { topics } = await engine.structured<{ topics: string[] }>({
-    system: topicsSystem,
-    messages: [{ role: "user", content }],
-    schema: topicsSchema as unknown as Record<string, unknown>,
-    schemaName: "topics",
-    tier: "fast",
-  });
   const { cards } = await engine.structured<{
+    topics: string[];
     cards: { front: string; back: string; topic: string }[];
   }>({
-    system: flashcardsSystem(topics.length ? topics : ["General"]),
-    messages: [{ role: "user", content }],
-    schema: flashcardsSchema as unknown as Record<string, unknown>,
+    system: studyJsonSystem,
+    messages: [{ role: "user", content: studyUser(content, flashcardsTask) }],
+    schema: flashcardsCombinedSchema as unknown as Record<string, unknown>,
     schemaName: "flashcards",
     tier: "strong",
+    maxTokens: 3000,
   });
   return cards.map((c) => ({
     id: uuid(),
@@ -324,8 +331,10 @@ export async function generateMultiDocQuiz(
   const { questions } = await engine.structured<{
     questions: Omit<QuizQuestion, "id" | "noteId">[];
   }>({
-    system: quizSystem({ count, difficulty, types }),
-    messages: [{ role: "user", content }],
+    system: studyJsonSystem,
+    messages: [
+      { role: "user", content: studyUser(content, quizSystem({ count, difficulty, types })) },
+    ],
     schema: quizSchema as unknown as Record<string, unknown>,
     schemaName: "quiz",
     tier: "strong",
@@ -384,8 +393,16 @@ export async function generatePracticeTest(
   const difficulty = opts.difficulty ?? "intermediate";
 
   const result = await engine.structured<PracticeTest>({
-    system: practiceTestSystem({ mcqCount, frqCount, essayCount, difficulty }),
-    messages: [{ role: "user", content }],
+    system: studyJsonSystem,
+    messages: [
+      {
+        role: "user",
+        content: studyUser(
+          content,
+          practiceTestSystem({ mcqCount, frqCount, essayCount, difficulty }),
+        ),
+      },
+    ],
     schema: practiceTestSchema as unknown as Record<string, unknown>,
     schemaName: "practice_test",
     tier: "strong",

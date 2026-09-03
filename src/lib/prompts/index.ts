@@ -3,7 +3,7 @@
    free-form tasks (notes, chat, title) stream markdown/text. No source citations
    are emitted in generated content by design. */
 
-export const PROMPTS_VERSION = 1;
+export const PROMPTS_VERSION = 2;
 
 /* ---- Notes -------------------------------------------------------------- */
 
@@ -13,6 +13,8 @@ export function noteSystem(language: string): string {
     "clear, well-structured study notes in GitHub-flavored Markdown.",
     "",
     "Requirements:",
+    "- Begin with a single level-1 heading (`# Title`) — a concise, specific",
+    "  title for the document, at most 8 words.",
     "- Open with a one-paragraph overview of what the material covers.",
     "- Use multi-level headings (#, ##, ###) to organize by concept, following the",
     "  source's natural order.",
@@ -32,6 +34,22 @@ export function noteSystem(language: string): string {
 
 export function noteUser(sourceText: string): string {
   return `Source material:\n\n${sourceText}`;
+}
+
+/* ---- Canonical shared prefix for JSON study-generation calls --------------
+   Every structured study task (flashcards, quiz, practice test, podcast) uses
+   the same byte-identical system prompt plus a SOURCE block, so DeepSeek's
+   context cache hits on all but the first call for a given note. Task-specific
+   instructions go at the END of the user message, after the shared prefix. */
+
+export const studyJsonSystem = [
+  "You are a study-material generator.",
+  "Respond with a valid JSON object only — no markdown fences, no commentary",
+  "outside the JSON.",
+].join("\n");
+
+export function studyUser(content: string, task: string): string {
+  return `SOURCE:\n\n${content}\n\nTASK:\n\n${task}`;
 }
 
 /* For large documents processed in chunks (map step): notes for ONE section. */
@@ -54,7 +72,8 @@ export function noteSectionSystem(
 export function noteReduceSystem(language: string): string {
   return [
     "You are given study notes assembled from consecutive sections of one",
-    "document. Merge them into a single coherent set of notes: open with a short",
+    "document. Merge them into a single coherent set of notes: begin with a single",
+    "level-1 heading (`# Title`) — a concise title, at most 8 words — then a short",
     "overview paragraph, keep ALL substantive content, remove duplicated headings",
     "or repeated points, keep a logical order, and close with a `## Key Takeaways`",
     `list. Do not truncate. Write in ${language}. Output only the Markdown.`,
@@ -77,6 +96,39 @@ export function titleUser(text: string): string {
 export const topicsSystem =
   "You identify the main study topics in source material. Return 4–8 concise " +
   "topic labels (2–4 words each) that together cover the material.";
+
+/* Merged single-call flashcards: topics + cards in one structured response. */
+export const flashcardsTask = [
+  "1) List 4–8 study topics (2–4 words each) that together cover the material",
+  "   and put them in `topics`.",
+  "2) Create study flashcards — one atomic concept per card; the front is a",
+  "   question or term, the back a complete, self-contained answer. Prefer",
+  "   active recall over recognition. Tag each card with the single most",
+  "   relevant topic from your `topics` list. Aim for 2–4 cards per topic.",
+  "For ANY math, use KaTeX notation: inline `$...$` and display `$$...$$`.",
+].join("\n");
+
+export const flashcardsCombinedSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["topics", "cards"],
+  properties: {
+    topics: { type: "array", items: { type: "string" } },
+    cards: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["front", "back", "topic"],
+        properties: {
+          front: { type: "string" },
+          back: { type: "string" },
+          topic: { type: "string" },
+        },
+      },
+    },
+  },
+} as const;
 
 export const topicsSchema = {
   type: "object",

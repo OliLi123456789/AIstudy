@@ -9,7 +9,7 @@ import type { Repo } from "../db";
 import type { Job, JobFile, Note, SourceKind } from "../types";
 import { uuid, now } from "../ids";
 import { ingest, type IngestInput } from "../ingest";
-import { generateNoteBody, generateTitle } from "./index";
+import { extractTitleFromBlocks, generateNoteBody, generateTitle } from "./index";
 
 export type ProgressCb = (job: Job) => void;
 
@@ -121,14 +121,23 @@ export async function createNoteFromSources(
     blocks = await generateNoteBody(engine, combined, language);
   }
 
-  // 3. Title.
+  // 3. Title — prefer the `# Title` heading the note generator was asked to
+  //    open with (no extra API call); fall back to the separate title call
+  //    only when no heading was produced (e.g. the large-doc path skipped
+  //    the reduce step).
   await emit({ stage: "title", message: "Naming the note…", progress: 0.92 });
   let title = "Untitled Document";
   if (!isBlank) {
-    try {
-      title = await generateTitle(engine, combined);
-    } catch {
-      /* keep default title */
+    const extracted = extractTitleFromBlocks(blocks);
+    if (extracted) {
+      title = extracted.title;
+      blocks = extracted.blocks;
+    } else {
+      try {
+        title = await generateTitle(engine, combined);
+      } catch {
+        /* keep default title */
+      }
     }
   }
 

@@ -43,6 +43,7 @@ class FakeEngine implements Engine {
     const byName: Record<string, unknown> = {
       topics: { topics: ["Light", "Water"] },
       flashcards: {
+        topics: ["Light", "Water"],
         cards: [
           { front: "What drives photosynthesis?", back: "Light", topic: "Light" },
           { front: "What is a reactant?", back: "Water", topic: "Water" },
@@ -120,10 +121,10 @@ describe("generation tasks", () => {
     expect(await generateTitle(engine, "text")).toBe("Photosynthesis Basics");
   });
 
-  it("generateFlashcards runs two phases and seeds FSRS state", async () => {
+  it("generateFlashcards runs one merged call and seeds FSRS state", async () => {
     const engine = new FakeEngine();
     const cards = await generateFlashcards(engine, makeNote());
-    expect(engine.calls).toEqual(["topics", "flashcards"]);
+    expect(engine.calls).toEqual(["flashcards"]);
     expect(cards).toHaveLength(2);
     expect(cards[0].state).toBe("new");
     expect(cards[0].noteId).toBeTruthy();
@@ -149,7 +150,9 @@ describe("createNoteFromSources pipeline", () => {
     });
     const note = await repo.getNote(id);
     expect(note).toBeTruthy();
-    expect(note!.title).toBe("Photosynthesis Basics");
+    // Title comes from the `# Overview` heading the fake note generator emits;
+    // no separate title API call is made.
+    expect(note!.title).toBe("Overview");
     expect(note!.blocks.length).toBeGreaterThan(0);
   });
 

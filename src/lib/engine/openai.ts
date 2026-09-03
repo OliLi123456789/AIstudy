@@ -171,18 +171,24 @@ export class OpenAIEngine implements Engine {
     }
 
     // Fallback for providers without json_schema (DeepSeek):
-    // Use json_object mode + inject the schema into the system prompt.
+    // json_object mode + schema injected into the prompt. The schema text is
+    // appended to the LAST user message (not a separate system message) so
+    // DeepSeek's context cache can share the common prompt prefix across
+    // generation tasks.
     const schemaStr = JSON.stringify(opts.schema, null, 2);
     const systemMsg = messages[0]?.role === "system" ? messages[0] : null;
     const userMsgs = systemMsg ? messages.slice(1) : messages;
+    const schemaInstr = `You must respond with a JSON object that strictly follows this schema. Do not include any text outside the JSON:\n\`\`\`json\n${schemaStr}\n\`\`\``;
 
+    const last = userMsgs[userMsgs.length - 1];
+    const tail =
+      last && last.role === "user"
+        ? { ...last, content: `${last.content}\n\n${schemaInstr}` }
+        : { role: "user" as const, content: schemaInstr };
     const promptMessages = [
       ...(systemMsg ? [systemMsg] : []),
-      {
-        role: "system" as const,
-        content: `You must respond with a JSON object that strictly follows this schema. Do not include any text outside the JSON:\n\`\`\`json\n${schemaStr}\n\`\`\``,
-      },
-      ...userMsgs,
+      ...userMsgs.slice(0, -1),
+      tail,
     ];
 
     const res = await this.post(this.chatPath, {
