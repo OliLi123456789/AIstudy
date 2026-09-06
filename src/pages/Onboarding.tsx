@@ -350,6 +350,7 @@ export default function Onboarding() {
         <footer className="mt-12 border-t border-edge pb-2 pt-6">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-faint">
             <a href="/about.html" className="font-semibold hover:text-ink">About</a>
+            <a href="/samples/" className="font-semibold hover:text-ink">Sample Study Guides</a>
             <a href="/privacy.html" className="font-semibold hover:text-ink">Privacy Policy</a>
             <a href="/terms.html" className="font-semibold hover:text-ink">Terms of Service</a>
             <span>© 2026 AIstudy</span>
