@@ -266,6 +266,12 @@ export default function Settings() {
             </div>
           </div>
         </div>
+
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-edge pt-4 text-xs text-ink-faint">
+          <a href="/about.html" className="font-semibold hover:text-ink">About</a>
+          <a href="/privacy.html" className="font-semibold hover:text-ink">Privacy Policy</a>
+          <a href="/terms.html" className="font-semibold hover:text-ink">Terms of Service</a>
+        </div>
       </div>
     </div>
   );

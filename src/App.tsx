@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import AppShell from "./components/AppShell";
 import Dashboard from "./pages/Dashboard";
@@ -12,10 +13,19 @@ import FolderView from "./pages/FolderView";
 import Planner from "./pages/Planner";
 import { useApp } from "./lib/app";
 import { CANVAS_ENABLED } from "./lib/features";
+import { initAdSense, isContentlessPath } from "./lib/ads";
 
 export default function App() {
   const location = useLocation();
   const { ready, prefs } = useApp();
+
+  // Load the AdSense script only on screens with real content — never on
+  // the onboarding/auth wall, admin pages, or while the app is loading
+  // (Google policy: no ad code on screens without publisher content).
+  useEffect(() => {
+    if (!ready || !prefs.onboarded || isContentlessPath(location.pathname)) return;
+    initAdSense();
+  }, [ready, prefs.onboarded, location.pathname]);
 
   if (!ready) {
     return (

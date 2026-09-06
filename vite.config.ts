@@ -63,15 +63,6 @@ export default defineConfig({
     tailwindcss(),
     localApi(),
     secretScan(),
-    {
-      name: "adsense-client",
-      transformIndexHtml(html) {
-        return html.replace(
-          "%VITE_ADSENSE_CLIENT%",
-          process.env.VITE_ADSENSE_CLIENT || "ca-pub-0000000000000000",
-        );
-      },
-    },
   ],
   server: {
     proxy: {

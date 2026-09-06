@@ -43,6 +43,40 @@ const FEATURES = [
   },
 ];
 
+const HOW_IT_WORKS = [
+  { step: "1", title: "Import your material", text: "Drop in a PDF, DOCX, slide deck or link — or paste any text." },
+  { step: "2", title: "Generate study material", text: "One click turns it into notes, flashcards, quizzes and practice tests." },
+  { step: "3", title: "Study your way", text: "Review notes, drill flashcards with spaced repetition, or play study games." },
+  { step: "4", title: "Track your mastery", text: "Scores and smart scheduling show exactly what needs another pass." },
+];
+
+const FAQ = [
+  {
+    q: "Is AIstudy really free?",
+    a: "Yes — every feature is free and unlimited, with no paywall and no credit card. The app is supported by advertising, and your data is never sold.",
+  },
+  {
+    q: "What can I import?",
+    a: "PDFs, Word documents, plain text, slide decks, article URLs and YouTube links are all supported.",
+  },
+  {
+    q: "Does the AI see my material?",
+    a: "Source text is sent to our AI provider only to generate your study material. It is not used to train models, and nothing is sold or shared with third parties.",
+  },
+  {
+    q: "Do I need an account?",
+    a: "No. Everything works right in your browser with no sign-up. An optional free account syncs your notes across devices.",
+  },
+  {
+    q: "What is spaced repetition?",
+    a: "Each flashcard is scheduled for review just before you would forget it — the most efficient way to build long-term memory.",
+  },
+  {
+    q: "Do my notes expire?",
+    a: "Notes you haven't opened in 30 days are removed from browser storage to keep it clean. You can export anything important at any time.",
+  },
+];
+
 export default function Onboarding() {
   const { savePrefs, repo } = useApp();
   const [mode, setMode] = useState<"signin" | "signup">("signup");
@@ -150,6 +184,20 @@ export default function Onboarding() {
               <p className="mt-1 text-sm text-ink-faint">{text}</p>
             </div>
           ))}
+        </section>
+
+        {/* How it works */}
+        <section className="mt-12">
+          <h2 className="text-center font-display text-2xl font-bold tracking-tight">How it works</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {HOW_IT_WORKS.map(({ step, title, text }) => (
+              <div key={step} className="rounded-card border border-edge bg-card p-4 shadow-soft">
+                <span className="font-display text-lg font-bold text-accent">{step}</span>
+                <h3 className="mt-1 font-display font-bold">{title}</h3>
+                <p className="mt-1 text-sm text-ink-faint">{text}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Auth panel */}
@@ -275,6 +323,29 @@ export default function Onboarding() {
             Free forever. Your study materials are private — nothing is sold or shared.
           </p>
         </section>
+
+        {/* FAQ */}
+        <section className="mx-auto mt-12 w-full max-w-2xl">
+          <h2 className="text-center font-display text-2xl font-bold tracking-tight">Frequently asked questions</h2>
+          <div className="mt-6 space-y-3">
+            {FAQ.map(({ q, a }) => (
+              <details key={q} className="rounded-card border border-edge bg-card p-4 shadow-soft">
+                <summary className="cursor-pointer list-none font-display text-sm font-bold">{q}</summary>
+                <p className="mt-2 text-sm text-ink-dim">{a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-12 border-t border-edge pb-2 pt-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-faint">
+            <a href="/about.html" className="font-semibold hover:text-ink">About</a>
+            <a href="/privacy.html" className="font-semibold hover:text-ink">Privacy Policy</a>
+            <a href="/terms.html" className="font-semibold hover:text-ink">Terms of Service</a>
+            <span>© 2026 AIstudy</span>
+          </div>
+        </footer>
       </div>
     </div>
   );
