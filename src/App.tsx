@@ -36,7 +36,9 @@ export default function App() {
     );
   }
 
-  if (!prefs.onboarded && location.pathname !== "/onboarding" && location.pathname !== "/auth/callback") {
+  // Only the root is gated behind the landing page; deep links (e.g. the
+  // sample study set) stay reachable without an account.
+  if (!prefs.onboarded && location.pathname === "/") {
     return <Navigate to="/onboarding" replace />;
   }
 

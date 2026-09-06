@@ -19,6 +19,7 @@ import { useApp } from "../lib/app";
 import { getEnginePrefs } from "../lib/prefs";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase";
 import { syncWithSupabase } from "../lib/sync";
+import { DEMO_FOLDER_ID } from "../lib/seed";
 
 const FEATURES = [
   {
@@ -87,6 +88,7 @@ export default function Onboarding() {
   const [notice, setNotice] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
+  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     const sb = getSupabase();
@@ -237,84 +239,91 @@ export default function Onboarding() {
               </div>
             ) : (
               <>
-                <h2 className="text-center font-display text-xl font-bold">
-                  {mode === "signup" ? "Start studying — free" : "Welcome back"}
-                </h2>
-                <p className="mt-1 text-center text-sm text-ink-faint">
-                  {mode === "signup"
-                    ? "Create an account to sync your notes across devices."
-                    : "Sign in to pick up where you left off."}
+                <button
+                  onClick={() => finish(false)}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 font-display font-bold text-white hover:bg-accent-hover transition"
+                >
+                  <Sparkles className="size-4" /> Start studying — free, no account
+                </button>
+                <a
+                  href={`/folder/${DEMO_FOLDER_ID}`}
+                  className="mt-3 flex w-full items-center justify-center rounded-xl border border-edge bg-panel py-3 text-sm font-bold text-ink-dim hover:bg-card-hover transition"
+                >
+                  See a sample study set →
+                </a>
+                <p className="mt-3 text-center text-xs text-ink-faint">
+                  No sign-up required. Your work is saved in this browser.
                 </p>
 
                 {isSupabaseConfigured() && (
                   <>
-                    <div className="mt-5 flex rounded-full border border-edge bg-panel p-1">
-                      {(["signup", "signin"] as const).map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => {
-                            setMode(m);
-                            setMsg("");
-                          }}
-                          className={`flex-1 rounded-full py-1.5 text-xs font-semibold ${
-                            mode === m ? "bg-accent text-white" : "text-ink-faint hover:text-ink"
-                          }`}
-                        >
-                          {m === "signup" ? "Create account" : "Sign in"}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      className="mt-3 w-full rounded-xl border border-edge bg-panel px-3 py-2.5 text-sm outline-none placeholder:text-ink-faint"
-                    />
-                    <input
-                      type="password"
-                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && submit()}
-                      placeholder="Password"
-                      className="mt-3 w-full rounded-xl border border-edge bg-panel px-3 py-2.5 text-sm outline-none placeholder:text-ink-faint"
-                    />
                     <button
-                      onClick={submit}
-                      disabled={busy || !email.trim() || password.length < 6}
-                      className="mt-4 flex w-full items-center justify-center rounded-xl bg-accent py-3 font-display font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition"
+                      onClick={() => {
+                        setShowAuth(!showAuth);
+                        setMsg("");
+                      }}
+                      className="mt-4 w-full text-center text-xs font-semibold text-accent hover:underline"
                     >
-                      {busy ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : mode === "signup" ? (
-                        "Create free account"
-                      ) : (
-                        "Sign in"
-                      )}
+                      Already have an account? Sign in to sync across devices
                     </button>
-                    {msg && <p className="mt-3 text-center text-sm font-semibold text-ink-dim">{msg}</p>}
-                    <div className="my-4 flex items-center gap-3">
-                      <div className="h-px flex-1 bg-edge" />
-                      <span className="text-xs text-ink-faint">or</span>
-                      <div className="h-px flex-1 bg-edge" />
-                    </div>
+                    {showAuth && (
+                      <>
+                        <div className="mt-4 flex rounded-full border border-edge bg-panel p-1">
+                          {(["signup", "signin"] as const).map((m) => (
+                            <button
+                              key={m}
+                              onClick={() => {
+                                setMode(m);
+                                setMsg("");
+                              }}
+                              className={`flex-1 rounded-full py-1.5 text-xs font-semibold ${
+                                mode === m ? "bg-accent text-white" : "text-ink-faint hover:text-ink"
+                              }`}
+                            >
+                              {m === "signup" ? "Create account" : "Sign in"}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email"
+                          className="mt-3 w-full rounded-xl border border-edge bg-panel px-3 py-2.5 text-sm outline-none placeholder:text-ink-faint"
+                        />
+                        <input
+                          type="password"
+                          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && submit()}
+                          placeholder="Password"
+                          className="mt-3 w-full rounded-xl border border-edge bg-panel px-3 py-2.5 text-sm outline-none placeholder:text-ink-faint"
+                        />
+                        <button
+                          onClick={submit}
+                          disabled={busy || !email.trim() || password.length < 6}
+                          className="mt-4 flex w-full items-center justify-center rounded-xl bg-accent py-3 font-display font-bold text-white hover:bg-accent-hover disabled:opacity-50 transition"
+                        >
+                          {busy ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : mode === "signup" ? (
+                            "Create free account"
+                          ) : (
+                            "Sign in"
+                          )}
+                        </button>
+                        {msg && <p className="mt-3 text-center text-sm font-semibold text-ink-dim">{msg}</p>}
+                        <div className="my-4 flex items-center gap-3">
+                          <div className="h-px flex-1 bg-edge" />
+                          <span className="text-xs text-ink-faint">Your notes sync across devices</span>
+                          <div className="h-px flex-1 bg-edge" />
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
-                {!isSupabaseConfigured() && (
-                  <button
-                    onClick={() => finish(false)}
-                    className="w-full rounded-xl border border-edge bg-panel py-3 text-sm font-bold text-ink-dim hover:bg-card-hover transition"
-                  >
-                    Continue without an account
-                  </button>
-                )}
-                <p className="mt-3 text-center text-xs text-ink-faint">
-                  {isSupabaseConfigured()
-                    ? "Your notes sync across devices."
-                    : "Without an account, your notes stay on this device only."}
-                </p>
               </>
             )}
           </div>

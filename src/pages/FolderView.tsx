@@ -33,6 +33,8 @@ import {
   multiDocContent,
 } from "../lib/generation/index";
 import type { Flashcard, Folder, Job, Note, QuizAttempt, QuizQuestion } from "../lib/types";
+import AdUnit from "../components/AdUnit";
+import { ADSENSE_SLOTS } from "../lib/ads";
 
 /* Folder-level study (Study All, folder quiz, folder practice test) is HIDDEN
    for now: folders are organization-only, open a doc to study it. Flip this
@@ -196,7 +198,6 @@ export default function FolderView() {
               const note: Note = { id: crypto.randomUUID(), title: "Untitled", sourceKind: "blank", sourceText: "", blocks: [], folderId, createdAt: Date.now(), updatedAt: Date.now(), lastOpenedAt: Date.now() };
               await repo.putNote(note); bump(); hardNav(`/notes/${note.id}/editor`);
             }}
-            onOpenNote={(id) => hardNav(`/notes/${id}/editor`)}
           />
         )}
 
@@ -245,11 +246,10 @@ export default function FolderView() {
 /* Combined overview: progress KPIs + doc grid + focus areas */
 function FolderOverview({
   folder, notes, studying, engine,
-  onStudyAll, onUpload, onLink, onBlank, onOpenNote,
+  onStudyAll, onUpload, onLink, onBlank,
 }: {
   folder: Folder; notes: Note[]; studying: boolean; engine: boolean;
   onStudyAll: () => void; onUpload: () => void; onLink: () => void; onBlank: () => void;
-  onOpenNote: (id: string) => void;
 }) {
   const { repo } = useApp();
   const [cards, setCards] = useState<Flashcard[]>([]);
@@ -368,14 +368,16 @@ function FolderOverview({
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
             {notes.map((n) => (
-              <button key={n.id} onClick={() => onOpenNote(n.id)} className="flex flex-col items-center gap-1 rounded-lg border border-edge bg-panel p-2.5 hover:bg-card-hover transition">
+              <a key={n.id} href={`/notes/${n.id}/editor`} className="flex flex-col items-center gap-1 rounded-lg border border-edge bg-panel p-2.5 hover:bg-card-hover transition">
                 <FileText className="size-6 text-ink-dim" />
                 <span className="font-display text-2xs font-bold text-center line-clamp-2 leading-tight">{n.title}</span>
-              </button>
+              </a>
             ))}
           </div>
         )}
       </div>
+
+      <AdUnit slot={ADSENSE_SLOTS.folder || undefined} className="mt-6" />
     </div>
   );
 }

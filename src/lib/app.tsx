@@ -22,6 +22,7 @@ import { getEnginePrefs, saveEnginePrefs } from "./prefs";
 import type { EnginePrefs } from "./types";
 import { getSupabase } from "./supabase";
 import { reconcileJobs } from "./generation/pipeline";
+import { seedDemoData } from "./seed";
 
 let repoPromise: Promise<Repo> | null = null;
 export function getRepo(): Promise<Repo> {
@@ -85,6 +86,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (async () => {
       const r = await getRepo();
       await r.cleanupStale(30).catch(() => {});
+      // First-run visitors get a sample study set so the app is never empty
+      // (and the AdSense crawler finds real study content). Idempotent.
+      if (!getEnginePrefs().onboarded) {
+        await seedDemoData(r).catch(() => {});
+      }
       await reconcileJobs(r).catch(() => {});
       const e = await buildEngine().catch(() => null);
       if (!alive) return;
@@ -97,17 +103,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  /* Auth gate: a signed-in Supabase user is always onboarded; when Supabase
-     is configured and there is no session, force the landing page. This is
-     what makes "logged out ⇒ landing" actually stick. */
+  /* Auth gate: a signed-in Supabase user is always onboarded. Signing out
+     returns to the landing page, but visitors without a session are free to
+     start using the app — no account wall. */
   useEffect(() => {
     const sb = getSupabase();
     if (!sb) return;
     sb.auth.getSession().then(({ data }) => {
-      setPrefs((prev) => ({ ...prev, onboarded: Boolean(data.session) }));
+      if (data.session) setPrefs((prev) => ({ ...prev, onboarded: true }));
     });
-    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
-      setPrefs((prev) => ({ ...prev, onboarded: Boolean(session) }));
+    const { data: sub } = sb.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setPrefs((prev) => ({ ...prev, onboarded: true }));
+      } else if (event === "SIGNED_OUT") {
+        setPrefs((prev) => ({ ...prev, onboarded: false }));
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);

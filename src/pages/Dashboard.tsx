@@ -23,6 +23,8 @@ import type { Folder, Job, Note, StudyBlock } from "../lib/types";
 import { createCanvasClient, type CanvasUpcomingEvent } from "../lib/canvas";
 import { CANVAS_ENABLED } from "../lib/features";
 import { dateKey, minToTime } from "../lib/calendar";
+import AdUnit from "../components/AdUnit";
+import { ADSENSE_SLOTS } from "../lib/ads";
 
 function relTime(ms: number): string {
   const s = Math.floor((Date.now() - ms) / 1000);
@@ -277,6 +279,8 @@ export default function Dashboard() {
           ))}
         </div>
       )}
+
+      <AdUnit slot={ADSENSE_SLOTS.dashboard || undefined} className="mt-8" />
 
       {ctxMenu && (
         <div className="fixed z-50 rounded-xl border border-edge bg-card p-1.5 shadow-lg" style={{ top: 200, left: "50%", transform: "translateX(-50%)" }} onClick={(e) => e.stopPropagation()}>

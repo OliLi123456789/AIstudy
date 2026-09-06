@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
-/* Landing page test — verifies the sign-in/sign-up panel renders when
- * Supabase is configured, and the local-only fallback always exists. */
+/* Landing page test — verifies the marketing hero renders, the free
+ * no-account entry is always first, the sample study set link exists for
+ * crawlers, and sign-in/sign-up is collapsed behind a toggle when Supabase
+ * is configured. */
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -51,27 +53,37 @@ describe("Onboarding landing page", () => {
     expect(screen.getByText("Study games")).toBeTruthy();
   });
 
-  it("shows sign-up form and the local-only fallback when Supabase is configured", async () => {
+  it("shows the free entry first and hides auth behind a toggle when Supabase is configured", async () => {
     supabaseMock.configured = true;
     renderLanding();
-    expect(await screen.findByText("Create free account")).toBeTruthy();
+    // Primary path needs no account.
+    expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Email")).toBeNull();
+    // Crawler-followable link into the seeded sample study set.
+    expect(screen.getByRole("link", { name: /sample study set/i }).getAttribute("href")).toBe(
+      "/folder/demo-folder",
+    );
+    // Auth forms appear only after opting in.
+    fireEvent.click(screen.getByText(/Already have an account\?/));
+    expect(screen.getByText("Create free account")).toBeTruthy();
     expect(screen.getByPlaceholderText("Email")).toBeTruthy();
     expect(screen.getByPlaceholderText("Password")).toBeTruthy();
-    // Accounts are required when Supabase is configured — no local-only path.
-    expect(screen.queryByText("Continue without an account")).toBeNull();
   });
 
-  it("offers the local-only path when Supabase is not configured", async () => {
+  it("shows only the free entry when Supabase is not configured", async () => {
     supabaseMock.configured = false;
     renderLanding();
-    expect(await screen.findByText("Continue without an account")).toBeTruthy();
+    expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /sample study set/i })).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
+    expect(screen.queryByText(/Already have an account\?/)).toBeNull();
   });
 
   it("shows a check-your-email notice after signing up", async () => {
     supabaseMock.configured = true;
     renderLanding();
-    fireEvent.change(await screen.findByPlaceholderText("Email"), {
+    fireEvent.click(await screen.findByText(/Already have an account\?/));
+    fireEvent.change(screen.getByPlaceholderText("Email"), {
       target: { value: "student@example.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("Password"), {
