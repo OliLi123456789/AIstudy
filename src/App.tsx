@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import AppShell from "./components/AppShell";
-import HilltopBanner from "./components/HilltopBanner";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NoteView from "./pages/NoteView";
@@ -31,13 +30,6 @@ export default function App() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Right rail with the HilltopAds banner on every page except the auth
-  // callback and internal admin routes.
-  const hideRail =
-    location.pathname === "/onboarding" ||
-    location.pathname === "/auth/callback" ||
-    location.pathname.startsWith("/admin");
-
   return (
     <div className="flex h-full bg-bg">
       <div className="min-w-0 flex-1">
@@ -57,14 +49,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-      {!hideRail && (
-        <aside
-          key={location.key}
-          className="hidden w-80 shrink-0 flex-col gap-4 overflow-y-auto border-l border-edge bg-panel p-4 xl:flex"
-        >
-          <HilltopBanner />
-        </aside>
-      )}
     </div>
   );
 }
