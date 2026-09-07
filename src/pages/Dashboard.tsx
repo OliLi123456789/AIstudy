@@ -280,7 +280,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <AdUnit slot={ADSENSE_SLOTS.dashboard || undefined} className="mt-8" />
+      {(folders.length > 0 || notes.length > 0) && (
+        <AdUnit slot={ADSENSE_SLOTS.dashboard || undefined} className="mt-8" />
+      )}
 
       {ctxMenu && (
         <div className="fixed z-50 rounded-xl border border-edge bg-card p-1.5 shadow-lg" style={{ top: 200, left: "50%", transform: "translateX(-50%)" }} onClick={(e) => e.stopPropagation()}>

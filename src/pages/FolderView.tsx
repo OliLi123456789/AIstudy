@@ -377,7 +377,9 @@ function FolderOverview({
         )}
       </div>
 
-      <AdUnit slot={ADSENSE_SLOTS.folder || undefined} className="mt-6" />
+      {notes.length > 0 && (
+        <AdUnit slot={ADSENSE_SLOTS.folder || undefined} className="mt-6" />
+      )}
     </div>
   );
 }

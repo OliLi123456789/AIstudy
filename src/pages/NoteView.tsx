@@ -261,7 +261,9 @@ function EditorView({
         </div>
         <div className="mx-6 mb-6 flex-1 overflow-y-auto rounded-card border border-edge bg-card p-8 shadow-soft">
           <BlockEditor key={note.id} blocks={note.blocks} onChange={onBlocks} />
-          <AdUnit slot={ADSENSE_SLOTS.note || undefined} className="mt-8" />
+          {(note.blocks.some((b) => b.text.trim().length > 0) || note.sourceText.trim().length > 0) && (
+            <AdUnit slot={ADSENSE_SLOTS.note || undefined} className="mt-8" />
+          )}
         </div>
       </div>
     </div>
