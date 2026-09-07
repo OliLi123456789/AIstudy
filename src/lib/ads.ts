@@ -52,11 +52,15 @@ export const ADSENSE_SLOTS: Record<"note" | "folder" | "dashboard", string> = {
   dashboard: "",
 };
 
-/* Routes where advertising must never load. */
+/* Routes where advertising must never load: auth walls, admin, and
+   utility/navigation screens (settings, planner). Ads belong next to
+   publisher content — study notes, folders, the dashboard. */
 export function isContentlessPath(pathname: string): boolean {
   return (
     pathname === "/onboarding" ||
     pathname === "/auth/callback" ||
+    pathname === "/settings" ||
+    pathname === "/planner" ||
     pathname.startsWith("/admin")
   );
 }
