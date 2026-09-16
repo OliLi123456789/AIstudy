@@ -33,11 +33,6 @@ export function initAdSense(): void {
   if (!client) {
     return;
   }
-  // If the snippet already exists in index.html, don't inject a duplicate.
-  if (document.querySelector('script[src*="adsbygoogle"]')) {
-    injected = true;
-    return;
-  }
   injected = true;
   adQueue();
   const s = document.createElement("script");
