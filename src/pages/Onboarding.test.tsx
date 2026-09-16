@@ -16,7 +16,9 @@ const supabaseMock = vi.hoisted(() => ({ configured: true }));
 const featuresMock = vi.hoisted(() => ({ authEnabled: false }));
 
 vi.mock("../lib/features", () => ({
-  AUTH_ENABLED: featuresMock.authEnabled,
+  get AUTH_ENABLED() {
+    return featuresMock.authEnabled;
+  },
   CANVAS_ENABLED: false,
 }));
 
