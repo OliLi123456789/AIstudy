@@ -1,10 +1,10 @@
-/* AdSense loader, gated to content screens only.
+/* AdSense integration.
 
-   Google policy forbids ad code on screens without publisher content —
-   loading states, onboarding/auth walls, and internal admin pages. The
-   loader is deliberately NOT in index.html. Content pages call
-   initAdSense() once the app is ready, the user is onboarded, and the
-   current route has real content. */
+   The loader snippet lives in index.html (site verification reads the raw
+   HTML). It makes pages ELIGIBLE for ads, but nothing displays unless a
+   manual <ins> unit exists or Auto ads is enabled — so keep Auto ads OFF
+   and rely on AdUnit placements, which only render on screens with real
+   content. */
 
 declare global {
   interface Window {
@@ -31,6 +31,11 @@ export function initAdSense(): void {
   }
   const client = adsenseClient();
   if (!client) {
+    return;
+  }
+  // The snippet already exists in index.html — never inject a duplicate.
+  if (document.querySelector('script[src*="adsbygoogle"]')) {
+    injected = true;
     return;
   }
   injected = true;
