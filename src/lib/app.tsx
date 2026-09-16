@@ -23,6 +23,7 @@ import type { EnginePrefs } from "./types";
 import { getSupabase } from "./supabase";
 import { reconcileJobs } from "./generation/pipeline";
 import { seedDemoData } from "./seed";
+import { AUTH_ENABLED } from "./features";
 
 let repoPromise: Promise<Repo> | null = null;
 export function getRepo(): Promise<Repo> {
@@ -105,8 +106,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   /* Auth gate: a signed-in Supabase user is always onboarded. Signing out
      returns to the landing page, but visitors without a session are free to
-     start using the app — no account wall. */
+     start using the app — no account wall. Inert while AUTH_ENABLED=false. */
   useEffect(() => {
+    if (!AUTH_ENABLED) return;
     const sb = getSupabase();
     if (!sb) return;
     sb.auth.getSession().then(({ data }) => {

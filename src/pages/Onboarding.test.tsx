@@ -13,6 +13,12 @@ import Onboarding from "./Onboarding";
 afterEach(() => cleanup());
 
 const supabaseMock = vi.hoisted(() => ({ configured: true }));
+const featuresMock = vi.hoisted(() => ({ authEnabled: false }));
+
+vi.mock("../lib/features", () => ({
+  AUTH_ENABLED: featuresMock.authEnabled,
+  CANVAS_ENABLED: false,
+}));
 
 vi.mock("../lib/supabase", () => ({
   isSupabaseConfigured: () => supabaseMock.configured,
@@ -28,11 +34,6 @@ vi.mock("../lib/supabase", () => ({
 }));
 
 vi.mock("../lib/sync", () => ({ syncWithSupabase: vi.fn() }));
-
-vi.mock("../lib/features", () => ({
-  AUTH_UI_ENABLED: true,
-  CANVAS_ENABLED: false,
-}));
 
 vi.mock("../lib/app", () => ({
   useApp: () => ({ savePrefs: vi.fn(), repo: null }),
@@ -60,6 +61,7 @@ describe("Onboarding landing page", () => {
 
   it("shows the free entry first and hides auth behind a toggle when Supabase is configured", async () => {
     supabaseMock.configured = true;
+    featuresMock.authEnabled = true;
     renderLanding();
     // Primary path needs no account.
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
@@ -77,6 +79,7 @@ describe("Onboarding landing page", () => {
 
   it("shows only the free entry when Supabase is not configured", async () => {
     supabaseMock.configured = false;
+    featuresMock.authEnabled = false;
     renderLanding();
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
     expect(screen.getByRole("link", { name: /sample study set/i })).toBeTruthy();
@@ -84,8 +87,19 @@ describe("Onboarding landing page", () => {
     expect(screen.queryByText(/Already have an account\?/)).toBeNull();
   });
 
+  it("hides all auth UI when accounts are disabled", async () => {
+    supabaseMock.configured = true;
+    featuresMock.authEnabled = false;
+    renderLanding();
+    expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /sample study set/i })).toBeTruthy();
+    expect(screen.queryByText(/Already have an account\?/)).toBeNull();
+    expect(screen.queryByPlaceholderText("Email")).toBeNull();
+  });
+
   it("shows a check-your-email notice after signing up", async () => {
     supabaseMock.configured = true;
+    featuresMock.authEnabled = true;
     renderLanding();
     fireEvent.click(await screen.findByText(/Already have an account\?/));
     fireEvent.change(screen.getByPlaceholderText("Email"), {

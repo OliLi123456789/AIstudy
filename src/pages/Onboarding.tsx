@@ -20,7 +20,7 @@ import { getEnginePrefs } from "../lib/prefs";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase";
 import { syncWithSupabase } from "../lib/sync";
 import { DEMO_FOLDER_ID } from "../lib/seed";
-import { AUTH_UI_ENABLED } from "../lib/features";
+import { AUTH_ENABLED } from "../lib/features";
 
 const FEATURES = [
   {
@@ -215,7 +215,7 @@ export default function Onboarding() {
               <div className="flex items-center justify-center gap-2 py-6 text-ink-faint">
                 <Loader2 className="size-4 animate-spin" /> Loading…
               </div>
-            ) : user ? (
+            ) : AUTH_ENABLED && user ? (
               <div className="text-center">
                 <Brain className="mx-auto size-8 text-accent" />
                 <h2 className="mt-3 font-display text-xl font-bold">Welcome back</h2>
@@ -256,7 +256,7 @@ export default function Onboarding() {
                   No sign-up required. Your work is saved in this browser.
                 </p>
 
-                {AUTH_UI_ENABLED && isSupabaseConfigured() && (
+                {AUTH_ENABLED && isSupabaseConfigured() && (
                   <>
                     <button
                       onClick={() => {
