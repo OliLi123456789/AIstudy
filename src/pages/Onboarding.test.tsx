@@ -29,6 +29,11 @@ vi.mock("../lib/supabase", () => ({
 
 vi.mock("../lib/sync", () => ({ syncWithSupabase: vi.fn() }));
 
+vi.mock("../lib/features", () => ({
+  AUTH_UI_ENABLED: true,
+  CANVAS_ENABLED: false,
+}));
+
 vi.mock("../lib/app", () => ({
   useApp: () => ({ savePrefs: vi.fn(), repo: null }),
 }));

@@ -20,6 +20,7 @@ import { getEnginePrefs } from "../lib/prefs";
 import { getSupabase, isSupabaseConfigured } from "../lib/supabase";
 import { syncWithSupabase } from "../lib/sync";
 import { DEMO_FOLDER_ID } from "../lib/seed";
+import { AUTH_UI_ENABLED } from "../lib/features";
 
 const FEATURES = [
   {
@@ -255,7 +256,7 @@ export default function Onboarding() {
                   No sign-up required. Your work is saved in this browser.
                 </p>
 
-                {isSupabaseConfigured() && (
+                {AUTH_UI_ENABLED && isSupabaseConfigured() && (
                   <>
                     <button
                       onClick={() => {

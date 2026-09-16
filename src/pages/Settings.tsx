@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../lib/app";
 import { createCanvasClient } from "../lib/canvas";
-import { CANVAS_ENABLED } from "../lib/features";
+import { CANVAS_ENABLED, AUTH_UI_ENABLED } from "../lib/features";
 import AuthCard from "../components/AuthCard";
 import { exportMarkdown, downloadText } from "../lib/export";
 
@@ -94,7 +94,7 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6">
-          <AuthCard />
+          {AUTH_UI_ENABLED && <AuthCard />}
 
           <div className="rounded-card border border-edge bg-card p-6 shadow-soft">
             <div className="flex items-start justify-between">
