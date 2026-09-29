@@ -347,10 +347,36 @@ export default function Onboarding() {
           </div>
         </section>
 
+        {/* Study guides */}
+        <section className="mx-auto mt-12 w-full max-w-2xl">
+          <h2 className="text-center font-display text-2xl font-bold tracking-tight">Study guides</h2>
+          <p className="mt-2 text-center text-sm text-ink-faint">
+            Free, evidence-based guides to study better.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <a href="/guides/active-recall.html" className="rounded-card border border-edge bg-card p-4 shadow-soft transition hover:border-accent/40">
+              <p className="font-display text-sm font-bold">Active recall</p>
+              <p className="mt-1 text-xs text-ink-faint">The most effective study technique</p>
+            </a>
+            <a href="/guides/spaced-repetition.html" className="rounded-card border border-edge bg-card p-4 shadow-soft transition hover:border-accent/40">
+              <p className="font-display text-sm font-bold">Spaced repetition</p>
+              <p className="mt-1 text-xs text-ink-faint">A beginner's guide to review schedules</p>
+            </a>
+            <a href="/guides/exam-week.html" className="rounded-card border border-edge bg-card p-4 shadow-soft transition hover:border-accent/40">
+              <p className="font-display text-sm font-bold">Exam-week plan</p>
+              <p className="mt-1 text-xs text-ink-faint">Seven days to test day, day by day</p>
+            </a>
+          </div>
+          <p className="mt-4 text-center">
+            <a href="/guides/" className="text-xs font-semibold text-accent hover:underline">View all guides →</a>
+          </p>
+        </section>
+
         {/* Footer */}
         <footer className="mt-12 border-t border-edge pb-2 pt-6">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-ink-faint">
             <a href="/about.html" className="font-semibold hover:text-ink">About</a>
+            <a href="/guides/" className="font-semibold hover:text-ink">Study Guides</a>
             <a href="/samples/" className="font-semibold hover:text-ink">Sample Study Guides</a>
             <a href="/privacy.html" className="font-semibold hover:text-ink">Privacy Policy</a>
             <a href="/terms.html" className="font-semibold hover:text-ink">Terms of Service</a>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Beginner's Guide to Spaced Repetition — AIstudy Study Guide</title>
+  <meta name="description" content="How spaced repetition schedules reviews against the forgetting curve, why cramming can't compete, and how to build a simple review schedule." />
+  <link rel="canonical" href="https://ai-study-one-eta.vercel.app/guides/spaced-repetition.html" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2169480693466109" crossorigin="anonymous"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "A Beginner's Guide to Spaced Repetition",
+    "description": "How spaced repetition works, why expanding intervals beat cramming, and how to build a simple review schedule.",
+    "datePublished": "2026-09-29",
+    "author": { "@type": "Organization", "name": "AIstudy" }
+  }
+  </script>
+  <style>
+    :root { --accent: #4f46e5; --ink: #1f2937; --dim: #6b7280; --edge: #e5e7eb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #fff; line-height: 1.65; }
+    header { border-bottom: 1px solid var(--edge); }
+    .bar { max-width: 760px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+    .brand span { color: var(--accent); }
+    nav a { color: var(--dim); text-decoration: none; margin-left: 18px; font-size: 0.9rem; }
+    nav a:hover { color: var(--ink); }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+    h2 { font-size: 1.3rem; margin: 40px 0 12px; }
+    p, li { color: #374151; font-size: 0.97rem; }
+    .crumb { color: var(--dim); font-size: 0.85rem; }
+    .crumb a { color: var(--dim); }
+    .callout { border-left: 4px solid var(--accent); background: #eef2ff; border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 24px 0; }
+    figure { margin: 28px 0; text-align: center; }
+    figcaption { font-size: 0.85rem; color: var(--dim); margin-top: 8px; }
+    .related { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: 16px; }
+    .related a { border: 1px solid var(--edge); border-radius: 10px; padding: 14px 16px; text-decoration: none; color: var(--ink); font-size: 0.92rem; }
+    .related a:hover { border-color: var(--accent); }
+    footer { border-top: 1px solid var(--edge); margin-top: 64px; padding-top: 24px; font-size: 0.85rem; color: var(--dim); }
+    footer a { color: var(--dim); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="brand">AI<span>study</span></div>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/samples/">Samples</a>
+        <a href="/guides/">Guides</a>
+        <a href="/about.html">About</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <p class="crumb"><a href="/guides/">Study Guides</a> · Spaced Repetition</p>
+    <h1>A Beginner's Guide to Spaced Repetition</h1>
+    <p class="lede" style="color: var(--dim); font-size: 1.1rem;">Review each fact just before you'd forget it, and the gap before the next review grows. It's the single most efficient way to build long-term memory — and the exact opposite of cramming.</p>
+
+    <h2>The idea in one sentence</h2>
+    <p>Memories fade on a predictable curve — fast at first, then slower. Spaced repetition reviews each item at expanding intervals, timed so each review happens right before the memory would fade. Every successful retrieval stretches the interval further.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 140" role="img" aria-label="Timeline: learn on day 0, review on days 1, 3, 7, 21, with growing gaps" style="max-width:100%; height:auto;">
+        <line x1="20" y1="80" x2="620" y2="80" stroke="#e5e7eb" stroke-width="2"/>
+        <circle cx="60" cy="80" r="8" fill="#4f46e5"/><text x="60" y="110" text-anchor="middle" font-size="12" fill="#1f2937">Learn</text>
+        <circle cx="160" cy="80" r="8" fill="#4f46e5"/><text x="160" y="110" text-anchor="middle" font-size="12" fill="#1f2937">Day 1</text>
+        <circle cx="280" cy="80" r="8" fill="#4f46e5"/><text x="280" y="110" text-anchor="middle" font-size="12" fill="#1f2937">Day 3</text>
+        <circle cx="420" cy="80" r="8" fill="#4f46e5"/><text x="420" y="110" text-anchor="middle" font-size="12" fill="#1f2937">Day 7</text>
+        <circle cx="580" cy="80" r="8" fill="#4f46e5"/><text x="580" y="110" text-anchor="middle" font-size="12" fill="#1f2937">Day 21</text>
+        <text x="110" y="64" text-anchor="middle" font-size="11" fill="#6b7280">+1 day</text>
+        <text x="220" y="64" text-anchor="middle" font-size="11" fill="#6b7280">+2 days</text>
+        <text x="350" y="64" text-anchor="middle" font-size="11" fill="#6b7280">+4 days</text>
+        <text x="500" y="64" text-anchor="middle" font-size="11" fill="#6b7280">+2 weeks</text>
+      </svg>
+      <figcaption>A simple expanding schedule: the gaps between reviews grow each time.</figcaption>
+    </figure>
+
+    <h2>Why cramming loses</h2>
+    <p>Cramming shoves everything into short-term memory in one night. It can scrape you through tomorrow's test, but almost everything is gone within days. Spaced repetition spreads the same total time across a month and produces memory that survives the semester. The research is unambiguous: spacing is one of the largest, most replicated effects in learning science.</p>
+
+    <h2>A schedule you can start today</h2>
+    <ol>
+      <li><strong>Day 0:</strong> learn the material once (see our <a href="/guides/active-recall.html">active recall</a> guide).</li>
+      <li><strong>Day 1:</strong> first review — the most important one. Test yourself on everything.</li>
+      <li><strong>Day 3:</strong> review again; mark what you failed.</li>
+      <li><strong>Day 7:</strong> third pass, focused on the weak items plus a light sweep.</li>
+      <li><strong>Day 21:</strong> final pass before the exam window.</li>
+    </ol>
+    <p>If you miss an item, its interval resets to short. If you get it right, the interval grows. Over time the schedule shapes itself around <em>your</em> memory, not the calendar.</p>
+
+    <h2>Pitfalls</h2>
+    <ul>
+      <li><strong>Self-grading generously.</strong> "I basically knew it" doesn't count. If you didn't produce the answer, reset the interval.</li>
+      <li><strong>Reviewing everything equally.</strong> Once an item is solid, let its interval stretch — don't waste reviews on what you already know.</li>
+      <li><strong>Skipping the day-1 review.</strong> The first review determines whether anything survives at all.</li>
+    </ul>
+
+    <div class="callout">🤖 <strong>Don't want to manage the calendar?</strong> AIstudy schedules every flashcard with an adaptive spaced-repetition algorithm, so you only ever see the cards due today.</div>
+
+    <!-- Manual AdSense unit goes here once a data-ad-slot ID exists
+         (create a "Display ads" unit in AdSense). Keep Auto ads off. -->
+
+    <h2>Read next</h2>
+    <div class="related">
+      <a href="/guides/forgetting-curve.html">How memory works: the forgetting curve →</a>
+      <a href="/guides/active-recall.html">Active recall: the most effective study technique →</a>
+      <a href="/guides/exam-week.html">How to study for an exam in one week →</a>
+    </div>
+
+    <footer>
+      <p>© 2026 AIstudy · <a href="/guides/">All Guides</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Service</a></p>
+    </footer>
+  </main>
+</body>
+</html>

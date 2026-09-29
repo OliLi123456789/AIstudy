@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How Memory Works: The Forgetting Curve — AIstudy Study Guide</title>
+  <meta name="description" content="What Ebbinghaus discovered about forgetting, why most loss happens in the first day, and how each review flattens the curve." />
+  <link rel="canonical" href="https://ai-study-one-eta.vercel.app/guides/forgetting-curve.html" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2169480693466109" crossorigin="anonymous"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How Memory Works: The Forgetting Curve",
+    "description": "The forgetting curve, why most memory loss happens in the first day, and how reviews flatten it.",
+    "datePublished": "2026-09-29",
+    "author": { "@type": "Organization", "name": "AIstudy" }
+  }
+  </script>
+  <style>
+    :root { --accent: #4f46e5; --ink: #1f2937; --dim: #6b7280; --edge: #e5e7eb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: #fff; line-height: 1.65; }
+    header { border-bottom: 1px solid var(--edge); }
+    .bar { max-width: 760px; margin: 0 auto; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; }
+    .brand span { color: var(--accent); }
+    nav a { color: var(--dim); text-decoration: none; margin-left: 18px; font-size: 0.9rem; }
+    nav a:hover { color: var(--ink); }
+    main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+    h2 { font-size: 1.3rem; margin: 40px 0 12px; }
+    p, li { color: #374151; font-size: 0.97rem; }
+    .crumb { color: var(--dim); font-size: 0.85rem; }
+    .crumb a { color: var(--dim); }
+    .callout { border-left: 4px solid var(--accent); background: #eef2ff; border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 24px 0; }
+    figure { margin: 28px 0; text-align: center; }
+    figcaption { font-size: 0.85rem; color: var(--dim); margin-top: 8px; }
+    .related { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: 16px; }
+    .related a { border: 1px solid var(--edge); border-radius: 10px; padding: 14px 16px; text-decoration: none; color: var(--ink); font-size: 0.92rem; }
+    .related a:hover { border-color: var(--accent); }
+    footer { border-top: 1px solid var(--edge); margin-top: 64px; padding-top: 24px; font-size: 0.85rem; color: var(--dim); }
+    footer a { color: var(--dim); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <div class="brand">AI<span>study</span></div>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/samples/">Samples</a>
+        <a href="/guides/">Guides</a>
+        <a href="/about.html">About</a>
+      </nav>
+    </div>
+  </header>
+  <main>
+    <p class="crumb"><a href="/guides/">Study Guides</a> · The Forgetting Curve</p>
+    <h1>How Memory Works: The Forgetting Curve</h1>
+    <p class="lede" style="color: var(--dim); font-size: 1.1rem;">In the 1880s, a German psychologist measured his own forgetting — and produced a curve that still explains why your exam prep works (or doesn't) today.</p>
+
+    <h2>The experiment</h2>
+    <p>Hermann Ebbinghaus memorized lists of nonsense syllables ("ZOF", "WID", "KAF") and tested himself at intervals, recording how much he could still recall. The result: memory decays <strong>fast at first, then slower</strong>. Roughly half of what he learned was gone within a day; what survived the first few days decayed much more slowly.</p>
+
+    <figure>
+      <svg viewBox="0 0 640 240" role="img" aria-label="Forgetting curve falling steeply at first then flattening; reviews make each curve shallower" style="max-width:100%; height:auto;">
+        <line x1="40" y1="200" x2="600" y2="200" stroke="#e5e7eb" stroke-width="2"/>
+        <line x1="40" y1="200" x2="40" y2="20" stroke="#e5e7eb" stroke-width="2"/>
+        <text x="310" y="232" text-anchor="middle" font-size="12" fill="#6b7280">Time</text>
+        <text x="18" y="112" text-anchor="middle" font-size="12" fill="#6b7280" transform="rotate(-90 18 112)">Retention</text>
+        <path d="M40 20 C 120 70, 150 120, 220 150 S 400 185, 600 195" fill="none" stroke="#4f46e5" stroke-width="3"/>
+        <text x="300" y="90" font-size="11" fill="#4f46e5">no review</text>
+        <circle cx="220" cy="150" r="5" fill="#f59e0b"/>
+        <path d="M220 150 C 300 70, 380 60, 440 55 S 540 52, 600 50" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6 4"/>
+        <text x="480" y="40" font-size="11" fill="#f59e0b">after a review</text>
+        <circle cx="440" cy="55" r="5" fill="#10b981"/>
+        <path d="M440 55 C 500 40, 550 35, 600 32" fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="6 4"/>
+        <text x="520" y="20" font-size="11" fill="#10b981">after a 2nd review</text>
+      </svg>
+      <figcaption>Each successful review resets the curve higher and makes it decay more slowly.</figcaption>
+    </figure>
+
+    <h2>What the curve means for you</h2>
+    <ul>
+      <li><strong>The first 24 hours decide everything.</strong> Most forgetting happens immediately. A single review on day 1 can double what survives the week.</li>
+      <li><strong>Forgetting is normal, not failure.</strong> The curve applies to everyone. What separates strong students is <em>scheduled</em> contact with the material.</li>
+      <li><strong>Each review flattens the curve.</strong> The memory comes back faster, lasts longer, and needs less review next time. This is why <a href="/guides/spaced-repetition.html">spaced repetition</a> works.</li>
+    </ul>
+
+    <h2>How to use it</h2>
+    <p>Treat learning as a series of well-timed touches: learn → review within 24 hours → review again on day 3 → day 7 → day 21. Each touch should be <a href="/guides/active-recall.html">active recall</a>, not rereading. Sleep also matters: memory consolidation happens during sleep, so the all-nighter directly sabotages the very process you're relying on.</p>
+
+    <div class="callout">🛌 <strong>The cheapest memory hack:</strong> study in the evening and review the next morning. Sleep consolidates the first pass, and the morning review catches it before the steep part of the curve.</div>
+
+    <!-- Manual AdSense unit goes here once a data-ad-slot ID exists
+         (create a "Display ads" unit in AdSense). Keep Auto ads off. -->
+
+    <h2>Read next</h2>
+    <div class="related">
+      <a href="/guides/spaced-repetition.html">A beginner's guide to spaced repetition →</a>
+      <a href="/guides/active-recall.html">Active recall: the most effective study technique →</a>
+      <a href="/guides/note-taking.html">How to take notes that help you learn →</a>
+    </div>
+
+    <footer>
+      <p>© 2026 AIstudy · <a href="/guides/">All Guides</a> · <a href="/about.html">About</a> · <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Service</a></p>
+    </footer>
+  </main>
+</body>
+</html>
