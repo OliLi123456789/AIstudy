@@ -5,7 +5,7 @@
    this file (and the demo folder it creates). The seeder is idempotent and
    only runs for visitors who have not onboarded yet. */
 
-import type { Block, Flashcard, Note, QuizQuestion } from "./types";
+import type { Block, Flashcard, GameCard, Note, QuizQuestion } from "./types";
 import type { Repo } from "./db";
 import { now } from "./ids";
 
@@ -78,12 +78,50 @@ const CELLS_SOURCE = [
   "Key organelles include the nucleus, which stores DNA and directs activity; mitochondria, which produce most of the cell's energy as ATP; ribosomes, which build proteins; and the cell membrane, a selectively permeable barrier. Plant cells additionally have a cell wall, chloroplasts, and a large central vacuole.",
 ].join(" ");
 
-/* Seeds the demo folder with two study documents, flashcards and quiz
-   questions. Returns true if it created anything, false if the demo
-   folder already existed. */
+function gameCard(
+  id: string,
+  noteId: string,
+  question: string,
+  shortAnswer: string,
+  wrongChoices: string[],
+): GameCard {
+  return { id, noteId, question, shortAnswer, wrongChoices };
+}
+
+function demoGameCards(): GameCard[] {
+  return [
+    gameCard("demo-g1", DEMO_NOTE_IDS.scientificMethod, "A testable, falsifiable prediction", "Hypothesis", ["Theory", "Observation", "Conclusion"]),
+    gameCard("demo-g2", DEMO_NOTE_IDS.scientificMethod, "The variable the researcher deliberately changes", "Independent variable", ["Dependent variable", "Control group", "Constant"]),
+    gameCard("demo-g3", DEMO_NOTE_IDS.scientificMethod, "The variable that is measured in an experiment", "Dependent variable", ["Independent variable", "Control group", "Constant"]),
+    gameCard("demo-g4", DEMO_NOTE_IDS.scientificMethod, "The baseline group with no treatment, used for comparison", "Control group", ["Experimental group", "Sample", "Population"]),
+    gameCard("demo-g5", DEMO_NOTE_IDS.scientificMethod, "Results that can be repeated by other researchers", "Reproducibility", ["Correlation", "Significance", "Bias"]),
+    gameCard("demo-g6", DEMO_NOTE_IDS.scientificMethod, "A well-tested explanation of natural phenomena", "Theory", ["Hypothesis", "Guess", "Observation"]),
+    gameCard("demo-g7", DEMO_NOTE_IDS.cells, "Stores DNA and directs cell activities", "Nucleus", ["Mitochondria", "Ribosome", "Membrane"]),
+    gameCard("demo-g8", DEMO_NOTE_IDS.cells, "Produces most of the cell's ATP", "Mitochondria", ["Nucleus", "Ribosome", "Chloroplast"]),
+    gameCard("demo-g9", DEMO_NOTE_IDS.cells, "Builds proteins from amino acids", "Ribosome", ["Nucleus", "Mitochondria", "Vacuole"]),
+    gameCard("demo-g10", DEMO_NOTE_IDS.cells, "A selectively permeable barrier around the cell", "Cell membrane", ["Cell wall", "Cytoplasm", "Nucleus"]),
+    gameCard("demo-g11", DEMO_NOTE_IDS.cells, "Organelle where photosynthesis happens", "Chloroplast", ["Mitochondria", "Nucleus", "Ribosome"]),
+    gameCard("demo-g12", DEMO_NOTE_IDS.cells, "Cells with no nucleus — their DNA floats in the cytoplasm", "Prokaryotic", ["Eukaryotic", "Plant", "Animal"]),
+  ];
+}
+
+/* Seeds the demo folder with two study documents, flashcards, quiz
+   questions and game cards. Runs once per browser for everyone — both new
+   visitors and users who onboarded before the demo existed. If the user
+   deletes the sample folder, it stays deleted. Returns true if it created
+   or backfilled anything. */
+const DEMO_SEED_FLAG = "aistudy.demo-seeded-v2";
+
 export async function seedDemoData(repo: Repo): Promise<boolean> {
+  if (localStorage.getItem(DEMO_SEED_FLAG) === "1") return false;
   const folders = await repo.listFolders();
-  if (folders.some((f) => f.id === DEMO_FOLDER_ID)) return false;
+  if (folders.some((f) => f.id === DEMO_FOLDER_ID)) {
+    // An older seed version already created the folder — backfill the game
+    // cards so the games tab has content too.
+    await repo.putGameCards(demoGameCards());
+    localStorage.setItem(DEMO_SEED_FLAG, "1");
+    return true;
+  }
 
   const t = now();
   await repo.putFolder({ id: DEMO_FOLDER_ID, name: "Sample Study Set", createdAt: t });
@@ -256,5 +294,8 @@ export async function seedDemoData(repo: Repo): Promise<boolean> {
     }),
   ]);
 
+  await repo.putGameCards(demoGameCards());
+
+  localStorage.setItem(DEMO_SEED_FLAG, "1");
   return true;
 }
