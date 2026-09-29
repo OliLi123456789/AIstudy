@@ -25,7 +25,7 @@ import GamesView from "../components/games/GamesView";
 import ProgressView from "../components/ProgressView";
 import { generatePracticeTest } from "../lib/generation/index";
 import AdUnit from "../components/AdUnit";
-import { ADSENSE_SLOTS } from "../lib/ads";
+import { ADSENSE_SLOTS, blocksWordCount, MIN_AD_WORDS } from "../lib/ads";
 import {
   downloadText,
   exportDocxHtml,
@@ -261,7 +261,7 @@ function EditorView({
         </div>
         <div className="mx-6 mb-6 flex-1 overflow-y-auto rounded-card border border-edge bg-card p-8 shadow-soft">
           <BlockEditor key={note.id} blocks={note.blocks} onChange={onBlocks} />
-          {(note.blocks.some((b) => b.text.trim().length > 0) || note.sourceText.trim().length > 0) && (
+          {blocksWordCount(note.blocks) >= MIN_AD_WORDS && (
             <AdUnit slot={ADSENSE_SLOTS.note || undefined} className="mt-8" />
           )}
         </div>

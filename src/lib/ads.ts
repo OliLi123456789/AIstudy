@@ -57,6 +57,18 @@ export const ADSENSE_SLOTS: Record<"note" | "folder" | "dashboard", string> = {
   dashboard: "",
 };
 
+/* An ad on a study page is only shown when the visible content is
+   substantial enough that the page can't be called "low value" (Google
+   policy: no ads on screens without publisher content). */
+export const MIN_AD_WORDS = 50;
+
+export function blocksWordCount(blocks: { text?: string }[]): number {
+  return blocks.reduce(
+    (n, b) => n + (b.text ? b.text.trim().split(/\s+/).filter(Boolean).length : 0),
+    0,
+  );
+}
+
 /* Routes where advertising must never load: auth walls, admin, and
    utility/navigation screens (settings, planner). Ads belong next to
    publisher content — study notes, folders, the dashboard. */

@@ -34,7 +34,7 @@ import {
 } from "../lib/generation/index";
 import type { Flashcard, Folder, Job, Note, QuizAttempt, QuizQuestion } from "../lib/types";
 import AdUnit from "../components/AdUnit";
-import { ADSENSE_SLOTS } from "../lib/ads";
+import { ADSENSE_SLOTS, blocksWordCount, MIN_AD_WORDS } from "../lib/ads";
 
 /* Folder-level study (Study All, folder quiz, folder practice test) is HIDDEN
    for now: folders are organization-only, open a doc to study it. Flip this
@@ -291,6 +291,9 @@ function FolderOverview({
       .slice(0, 5);
   })();
 
+  // Only show an ad when the folder's documents contain real content.
+  const folderWords = notes.reduce((n, note) => n + blocksWordCount(note.blocks), 0);
+
   return (
     <div className="px-10 py-8">
       <div className="flex items-start justify-between mb-6">
@@ -377,7 +380,7 @@ function FolderOverview({
         )}
       </div>
 
-      {notes.length > 0 && (
+      {folderWords >= MIN_AD_WORDS && (
         <AdUnit slot={ADSENSE_SLOTS.folder || undefined} className="mt-6" />
       )}
     </div>
