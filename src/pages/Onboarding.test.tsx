@@ -69,7 +69,7 @@ describe("Onboarding landing page", () => {
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
     // Crawler-followable links: static guides first, interactive app second.
-    expect(screen.getByRole("link", { name: /sample study guides/i }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: /^See sample study guides/i }).getAttribute("href")).toBe(
       "/samples/",
     );
     expect(screen.getByRole("link", { name: /interactive study set/i }).getAttribute("href")).toBe(
@@ -87,7 +87,7 @@ describe("Onboarding landing page", () => {
     featuresMock.authEnabled = false;
     renderLanding();
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /sample study guides/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^See sample study guides/i })).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
     expect(screen.queryByText(/Already have an account\?/)).toBeNull();
   });
@@ -97,7 +97,7 @@ describe("Onboarding landing page", () => {
     featuresMock.authEnabled = false;
     renderLanding();
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /sample study guides/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^See sample study guides/i })).toBeTruthy();
     expect(screen.queryByText(/Already have an account\?/)).toBeNull();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
   });
