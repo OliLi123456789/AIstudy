@@ -247,10 +247,16 @@ export default function Onboarding() {
                   <Sparkles className="size-4" /> Start studying — free, no account
                 </button>
                 <a
-                  href={`/folder/${DEMO_FOLDER_ID}`}
+                  href="/samples/"
                   className="mt-3 flex w-full items-center justify-center rounded-xl border border-edge bg-panel py-3 text-sm font-bold text-ink-dim hover:bg-card-hover transition"
                 >
-                  See a sample study set →
+                  See sample study guides →
+                </a>
+                <a
+                  href={`/folder/${DEMO_FOLDER_ID}`}
+                  className="mt-2 flex w-full items-center justify-center text-xs font-semibold text-accent hover:underline"
+                >
+                  Or open the interactive study set in the app →
                 </a>
                 <p className="mt-3 text-center text-xs text-ink-faint">
                   No sign-up required. Your work is saved in this browser.

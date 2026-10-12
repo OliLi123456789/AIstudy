@@ -93,11 +93,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await seedDemoData(r).catch(() => {});
       }
       await reconcileJobs(r).catch(() => {});
-      const e = await buildEngine().catch(() => null);
       if (!alive) return;
+      // Render content immediately; the AI engine connects in the background
+      // so a slow /api/session never blocks first paint (crawlers screenshot
+      // during this window and otherwise see a blank loading state).
       setRepo(r);
-      setEngine(e);
       setReady(true);
+      buildEngine()
+        .then((e) => {
+          if (alive) setEngine(e);
+        })
+        .catch(() => {});
     })();
     return () => {
       alive = false;

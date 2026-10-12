@@ -68,8 +68,11 @@ describe("Onboarding landing page", () => {
     // Primary path needs no account.
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
-    // Crawler-followable link into the seeded sample study set.
-    expect(screen.getByRole("link", { name: /sample study set/i }).getAttribute("href")).toBe(
+    // Crawler-followable links: static guides first, interactive app second.
+    expect(screen.getByRole("link", { name: /sample study guides/i }).getAttribute("href")).toBe(
+      "/samples/",
+    );
+    expect(screen.getByRole("link", { name: /interactive study set/i }).getAttribute("href")).toBe(
       "/folder/demo-folder",
     );
     // Auth forms appear only after opting in.
@@ -84,7 +87,7 @@ describe("Onboarding landing page", () => {
     featuresMock.authEnabled = false;
     renderLanding();
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /sample study set/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /sample study guides/i })).toBeTruthy();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
     expect(screen.queryByText(/Already have an account\?/)).toBeNull();
   });
@@ -94,7 +97,7 @@ describe("Onboarding landing page", () => {
     featuresMock.authEnabled = false;
     renderLanding();
     expect(await screen.findByText("Start studying — free, no account")).toBeTruthy();
-    expect(screen.getByRole("link", { name: /sample study set/i })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /sample study guides/i })).toBeTruthy();
     expect(screen.queryByText(/Already have an account\?/)).toBeNull();
     expect(screen.queryByPlaceholderText("Email")).toBeNull();
   });

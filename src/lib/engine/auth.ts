@@ -10,13 +10,19 @@ let sessionPromise: Promise<string> | null = null;
 export function getSessionToken(): Promise<string> {
   if (!sessionPromise) {
     sessionPromise = (async () => {
-      const res = await fetch("/api/session", { method: "POST" });
-      if (!res.ok) throw new Error("Could not start a session.");
-      const data = await res.json();
-      if (typeof data.token !== "string" || !data.token) {
-        throw new Error("No session token returned.");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      try {
+        const res = await fetch("/api/session", { method: "POST", signal: controller.signal });
+        if (!res.ok) throw new Error("Could not start a session.");
+        const data = await res.json();
+        if (typeof data.token !== "string" || !data.token) {
+          throw new Error("No session token returned.");
+        }
+        return data.token;
+      } finally {
+        clearTimeout(timer);
       }
-      return data.token;
     })();
   }
   return sessionPromise;
